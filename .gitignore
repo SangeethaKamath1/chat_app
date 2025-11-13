@@ -1,0 +1,100 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+*.exe
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (commented out by default)
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.packages
+.pub/
+build/
+.metadata
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android
+android/app/debug
+android/app/profile
+android/app/release
+android/.gradle
+android/app/build/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+android/gradle/wrapper/gradle-wrapper.jar
+/local.properties
+/android/gradlew
+/android/gradlew.bat
+/captures/
+
+# Security - NEVER COMMIT THESE
+key.properties
+**/*.keystore
+**/*.jks
+
+# iOS
+ios/
+!ios/Runner/Info.plist
+!ios/Runner/GoogleService-Info.plist
+ios/Flutter/AppFrameworkInfo.plist
+ios/Flutter/GeneratedPluginRegistrant.*
+ios/Runner/Assets.xcassets/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+
+# macOS
+macos/
+!macos/Runner/Info.plist
+macos/Flutter/GeneratedPluginRegistrant.*
+
+# Windows
+windows/
+
+# Linux
+linux/
+
+# Web
+web/
+!web/index.html  # Only if you have custom web modifications
+
+# Xcode
+*.xcconfig
+*.xcworkspace
+project.pbxproj
+*.entitlements
+
+# CocoaPods
+Podfile.lock
+Pods/
