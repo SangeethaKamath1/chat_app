@@ -1,4 +1,4 @@
-import 'package:chat_app/constants/api_constants.dart';
+import 'package:chat_module/constants/api_constants.dart';
 import 'package:dio/dio.dart';
 
 class DioService{

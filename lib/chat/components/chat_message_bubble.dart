@@ -1,6 +1,6 @@
 
-import 'package:chat_app/chat/components/reaction_list_bottom_sheet.dart';
-import 'package:chat_app/model/conversation_list.dart';
+import 'package:chat_module/chat/components/reaction_list_bottom_sheet.dart';
+import 'package:chat_module/model/conversation_list.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../constants/app_constant.dart';

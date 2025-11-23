@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.chat_app">
+    package="com.example.chat_module">
 
     <!-- ✅ Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -20,7 +20,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="chat_app"
+        android:label="chat_module"
         android:icon="@mipmap/ic_launcher"
         tools:replace="android:label">
 

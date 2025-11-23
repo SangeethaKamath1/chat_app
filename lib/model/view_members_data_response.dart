@@ -1,5 +1,5 @@
-import 'package:chat_app/model/group_member.dart';
-import 'package:chat_app/model/user.dart';
+import 'package:chat_module/model/group_member.dart';
+import 'package:chat_module/model/user.dart';
 
 class ViewMembersDataResponse {
   GroupDetails? groupDetails;

@@ -1,6 +1,6 @@
-import 'package:chat_app/constants/api_constants.dart';
-import 'package:chat_app/service/dio_service.dart';
-import 'package:chat_app/service/shared_preference.dart';
+import 'package:chat_module/constants/api_constants.dart';
+import 'package:chat_module/service/dio_service.dart';
+import 'package:chat_module/service/shared_preference.dart';
 import 'package:dio/dio.dart';
 
 import '../../constants/app_constant.dart';

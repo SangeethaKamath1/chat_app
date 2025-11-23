@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:chat_app/view_members/controller/view_members_controller.dart';
+import 'package:chat_module/view_members/controller/view_members_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';

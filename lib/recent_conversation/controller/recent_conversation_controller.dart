@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:chat_app/recent_conversation/repository/recent_conversation_repository.dart';
+import 'package:chat_module/recent_conversation/repository/recent_conversation_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';

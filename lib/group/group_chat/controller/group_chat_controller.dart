@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
-import 'package:chat_app/chat/chat_websocket/group_chat_web_socket_service.dart';
-import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/group/group_detail/repository/group_detail_repository.dart';
-import 'package:chat_app/group/repository/group_chat_repository.dart';
-import 'package:chat_app/model/group_message_status.dart';
-import 'package:chat_app/service/dio_service.dart';
-import 'package:chat_app/service/shared_preference.dart';
+import 'package:chat_module/chat/chat_websocket/chat_web_socket_service.dart';
+import 'package:chat_module/chat/chat_websocket/group_chat_web_socket_service.dart';
+import 'package:chat_module/constants/app_constant.dart';
+import 'package:chat_module/group/group_detail/repository/group_detail_repository.dart';
+import 'package:chat_module/group/repository/group_chat_repository.dart';
+import 'package:chat_module/model/group_message_status.dart';
+import 'package:chat_module/service/dio_service.dart';
+import 'package:chat_module/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';

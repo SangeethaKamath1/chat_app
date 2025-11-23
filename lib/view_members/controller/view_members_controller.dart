@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/group/group_detail/repository/group_detail_repository.dart';
-import 'package:chat_app/model/group_member.dart';
-import 'package:chat_app/service/shared_preference.dart';
+import 'package:chat_module/constants/app_constant.dart';
+import 'package:chat_module/group/group_detail/repository/group_detail_repository.dart';
+import 'package:chat_module/model/group_member.dart';
+import 'package:chat_module/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';

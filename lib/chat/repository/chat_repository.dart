@@ -1,6 +1,6 @@
-import 'package:chat_app/constants/api_constants.dart';
-import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/model/conversation_list.dart';
+import 'package:chat_module/constants/api_constants.dart';
+import 'package:chat_module/constants/app_constant.dart';
+import 'package:chat_module/model/conversation_list.dart';
 import 'package:dio/dio.dart';
 
 

@@ -1,6 +1,6 @@
 
 
-import 'package:chat_app/group/group_chat/components/reaction_list_bottom_sheet.dart';
+import 'package:chat_module/group/group_chat/components/reaction_list_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

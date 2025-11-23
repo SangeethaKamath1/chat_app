@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
-import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/service/shared_preference.dart';
+import 'package:chat_module/chat/chat_websocket/chat_web_socket_service.dart';
+import 'package:chat_module/constants/app_constant.dart';
+import 'package:chat_module/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

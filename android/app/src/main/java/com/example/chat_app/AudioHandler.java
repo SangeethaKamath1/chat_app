@@ -1,4 +1,4 @@
-package com.example.chat_app;
+package com.example.chat_module;
 
 import android.content.Context;
 import android.media.AudioManager;

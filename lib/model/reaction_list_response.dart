@@ -1,4 +1,4 @@
-import 'package:chat_app/model/user.dart';
+import 'package:chat_module/model/user.dart';
 import 'package:get/get.dart';
 
 class ReactionListResponse {

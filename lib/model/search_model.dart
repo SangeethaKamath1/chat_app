@@ -1,4 +1,4 @@
-import 'package:chat_app/model/group_member.dart';
+import 'package:chat_module/model/group_member.dart';
 
 class SearchListResponse{
   List<Member>? content;

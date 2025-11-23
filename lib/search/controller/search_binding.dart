@@ -1,4 +1,4 @@
-import 'package:chat_app/search/controller/search_controller.dart';
+import 'package:chat_module/search/controller/search_controller.dart';
 
 import 'package:get/get.dart';
 

@@ -1,10 +1,10 @@
 // group/group_chat/screens/group_message_info_screen.dart
-import 'package:chat_app/model/group_message_status.dart';
+import 'package:chat_module/model/group_message_status.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
-import 'package:chat_app/service/shared_preference.dart';
-import 'package:chat_app/constants/app_constant.dart';
+import 'package:chat_module/group/group_chat/controller/group_chat_controller.dart';
+import 'package:chat_module/service/shared_preference.dart';
+import 'package:chat_module/constants/app_constant.dart';
 
 import '../../routes/app_routes.dart';
 

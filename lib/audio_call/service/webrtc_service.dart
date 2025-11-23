@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:chat_app/audio_call/service/speakerphone_service.dart';
+import 'package:chat_module/audio_call/service/speakerphone_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart' hide navigator;
