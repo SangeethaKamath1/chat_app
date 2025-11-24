@@ -1,5 +1,5 @@
 
-import 'package:chat_module/chat/helpers/encryption_helper.dart';
+import 'package:chat_app/chat/helpers/encryption_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';

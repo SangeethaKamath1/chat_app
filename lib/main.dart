@@ -1,15 +1,15 @@
 
 
-import 'package:chat_module/audio_call/controller/jitsi_call_controller.dart';
-import 'package:chat_module/chat/chat_websocket/chat_web_socket_service.dart';
-import 'package:chat_module/group/create_group/controller/create_group_binding.dart';
-import 'package:chat_module/group/group_detail/controller/group_detail_controller.dart';
-import 'package:chat_module/login/login_screen.dart';
+import 'package:chat_app/audio_call/controller/jitsi_call_controller.dart';
+import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
+import 'package:chat_app/group/create_group/controller/create_group_binding.dart';
+import 'package:chat_app/group/group_detail/controller/group_detail_controller.dart';
+import 'package:chat_app/login/login_screen.dart';
 
-import 'package:chat_module/recent_conversation/recent_conversation_screen.dart';
-import 'package:chat_module/routes/app_routes.dart';
-import 'package:chat_module/service/dio_service.dart';
-import 'package:chat_module/service/shared_preference.dart';
+import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/dio_service.dart';
+import 'package:chat_app/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';

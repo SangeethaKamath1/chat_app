@@ -1,5 +1,5 @@
-import 'package:chat_module/chat/chat_websocket/ping_web_socket.dart';
-import 'package:chat_module/chat/chat_websocket/subscribe_web_socket.dart';
+import 'package:chat_app/chat/chat_websocket/ping_web_socket.dart';
+import 'package:chat_app/chat/chat_websocket/subscribe_web_socket.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

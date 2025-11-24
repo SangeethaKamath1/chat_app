@@ -1,4 +1,4 @@
-import 'package:chat_module/group/group_chat/controller/group_chat_controller.dart';
+import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
 import 'package:flutter/material.dart';
 import 'chat/controller/chat_controller.dart';
 import 'chat/helpers/encryption_helper.dart';

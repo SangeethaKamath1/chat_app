@@ -1,14 +1,14 @@
-import 'package:chat_module/audio_call/screens/call_screen.dart';
-import 'package:chat_module/audio_call/controller/call_bindig.dart';
-import 'package:chat_module/bindings/auth_binding.dart';
-import 'package:chat_module/chat/chat_screen.dart';
-import 'package:chat_module/chat/controller/chat_binding.dart';
-import 'package:chat_module/group/create_group/create_group_screen.dart';
-import 'package:chat_module/group/group_chat/controller/group_chat_binding.dart';
-import 'package:chat_module/group/group_chat/group_chat_screen.dart';
-import 'package:chat_module/login/login_screen.dart';
-import 'package:chat_module/recent_conversation/recent_conversation_screen.dart';
-import 'package:chat_module/register/register_screen.dart';
+import 'package:chat_app/audio_call/screens/call_screen.dart';
+import 'package:chat_app/audio_call/controller/call_bindig.dart';
+import 'package:chat_app/bindings/auth_binding.dart';
+import 'package:chat_app/chat/chat_screen.dart';
+import 'package:chat_app/chat/controller/chat_binding.dart';
+import 'package:chat_app/group/create_group/create_group_screen.dart';
+import 'package:chat_app/group/group_chat/controller/group_chat_binding.dart';
+import 'package:chat_app/group/group_chat/group_chat_screen.dart';
+import 'package:chat_app/login/login_screen.dart';
+import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
+import 'package:chat_app/register/register_screen.dart';
 import 'package:get/route_manager.dart';
 
 import '../add_members/add_members_screen.dart';

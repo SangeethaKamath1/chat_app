@@ -1,4 +1,4 @@
-// import 'package:chat_module/chat/chat_websocket/chat_web_socket_service.dart';
+// import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 // import 'package:get/get.dart';
 // import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 

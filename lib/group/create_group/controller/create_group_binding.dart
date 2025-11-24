@@ -1,4 +1,4 @@
-import 'package:chat_module/group/create_group/controller/create_group_controller.dart';
+import 'package:chat_app/group/create_group/controller/create_group_controller.dart';
 import 'package:get/get.dart';
 
 

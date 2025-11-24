@@ -4,10 +4,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:chat_module/constants/app_constant.dart';
-import 'package:chat_module/model/group_details.dart';
-import 'package:chat_module/model/view_members_data_response.dart';
-import 'package:chat_module/service/shared_preference.dart';
+import 'package:chat_app/constants/app_constant.dart';
+import 'package:chat_app/model/group_details.dart';
+import 'package:chat_app/model/view_members_data_response.dart';
+import 'package:chat_app/service/shared_preference.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 

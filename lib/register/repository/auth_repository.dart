@@ -2,10 +2,10 @@
 
 import 'dart:convert';
 
-import 'package:chat_module/constants/api_constants.dart';
-import 'package:chat_module/constants/app_constant.dart';
-import 'package:chat_module/service/dio_service.dart';
-import 'package:chat_module/service/shared_preference.dart';
+import 'package:chat_app/constants/api_constants.dart';
+import 'package:chat_app/constants/app_constant.dart';
+import 'package:chat_app/service/dio_service.dart';
+import 'package:chat_app/service/shared_preference.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';

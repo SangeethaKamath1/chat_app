@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:chat_module/constants/api_constants.dart';
-import 'package:chat_module/constants/app_constant.dart';
-import 'package:chat_module/model/create_group_response.dart';
-import 'package:chat_module/model/group_message_status.dart';
-import 'package:chat_module/service/dio_service.dart';
+import 'package:chat_app/constants/api_constants.dart';
+import 'package:chat_app/constants/app_constant.dart';
+import 'package:chat_app/model/create_group_response.dart';
+import 'package:chat_app/model/group_message_status.dart';
+import 'package:chat_app/service/dio_service.dart';
 import 'package:dio/dio.dart';
 
 import '../../service/shared_preference.dart';
