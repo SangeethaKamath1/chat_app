@@ -9,6 +9,8 @@ export 'group/group_detail/group_detail_screen.dart';
 export 'group/group_detail/controller/group_detail_controller.dart';
 export 'add_members/add_members_screen.dart';
 export 'audio_call/screens/call_screen.dart';
+export 'audio_call/controller/jitsi_call_controller.dart';
+export 'audio_call/service/webrtc_service.dart';
 
 
 export 'search/search_screen.dart';
