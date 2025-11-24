@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../chat/helpers/encryption_helper.dart';
 import '../../routes/app_routes.dart';
+import '../../src/theme/controller/chat_theme_controller.dart';
 import 'components/chat_message_bubble.dart';
 
 class GroupChatScreen extends StatelessWidget {
@@ -24,7 +25,7 @@ class GroupChatScreen extends StatelessWidget {
             return Text(chatController.name.value);
           }
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
         actions: [
           Obx(() { 
             int index = chatController.chatIndex.value;
@@ -252,7 +253,7 @@ class GroupChatScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: Colors.blue),
+                icon:  Icon(Icons.send, color: chatThemeController.theme.primaryColor),
                 onPressed: () => _handleSend(chatController),
               ),
             ],
@@ -273,7 +274,7 @@ class GroupChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(width: 4, height: 40, color: Colors.blue),
+          Container(width: 4, height: 40, color: chatThemeController.theme.primaryColor),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -281,9 +282,9 @@ class GroupChatScreen extends StatelessWidget {
               children: [
                 Text(
                   replyMsg.senderUsername ?? "Unknown",
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: chatThemeController.theme.primaryColor,
                   ),
                 ),
                 Text(

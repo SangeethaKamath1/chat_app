@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
+import '../../src/theme/controller/chat_theme_controller.dart';
 import 'controller/create_group_controller.dart';
 
 class CreateGroupScreen extends StatelessWidget {
@@ -16,7 +17,7 @@ final CreateGroupController controller = Get.find();
     return Scaffold(
       appBar: AppBar(
         title: const Text("Create Group"),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -118,7 +119,7 @@ final CreateGroupController controller = Get.find();
                     : "Create Group"),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: Colors.blue,
+                  backgroundColor: chatThemeController.theme.primaryColor,
                 ),
               ),
             ),

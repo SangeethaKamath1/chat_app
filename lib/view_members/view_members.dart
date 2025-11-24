@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../components/custom_dialoue.dart';
+import '../src/theme/controller/chat_theme_controller.dart';
 import 'controller/view_members_controller.dart';
 
 class ViewMembersScreen extends StatelessWidget {
@@ -17,7 +18,7 @@ controller.viewMembers();
     return Scaffold(
       appBar: AppBar(
         title: const Text("View Members"),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
         actions: [
           TextButton(
             onPressed: () {},
@@ -143,7 +144,7 @@ controller.viewMembers();
                               //       child: Row(
                               //         children: [
                               //           Icon(user.isAdmin==false?Icons.upgrade:Icons.arrow_downward_sharp,
-                              //               color: Colors.blueAccent),
+                              //               color: chatThemeController.theme.primaryColorAccent),
                               //           SizedBox(width: 8),
                               //           Text(user.isAdmin==false?"Promote to Admin":"Demote"),
                               //         ],

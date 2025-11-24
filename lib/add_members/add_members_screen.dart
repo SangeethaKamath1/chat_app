@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../src/theme/controller/chat_theme_controller.dart';
 import 'controller/add_members_controller.dart';
 
 class AddMembersScreen extends StatelessWidget {
@@ -15,7 +16,7 @@ class AddMembersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add Members"),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
         actions: [
           TextButton(
             onPressed:(){

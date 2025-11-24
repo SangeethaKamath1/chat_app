@@ -4,6 +4,7 @@ import '../components/custom_button.dart';
 import '../components/custom_textfield.dart';
 import '../login/controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
+import '../src/theme/controller/chat_theme_controller.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -23,12 +24,12 @@ class RegisterScreen extends StatelessWidget {
               const SizedBox(height: 40),
 
               /// Title
-              const Text(
+               Text(
                 "Create Account",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: chatThemeController.theme.primaryColor,
                 ),
               ),
               const SizedBox(height: 10),
@@ -72,10 +73,10 @@ class RegisterScreen extends StatelessWidget {
                   const Text("Already have an account? "),
                   GestureDetector(
                     onTap: () => Get.offNamed(AppRoutes.login),
-                    child: const Text(
+                    child:  Text(
                       "Login",
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: chatThemeController.theme.primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

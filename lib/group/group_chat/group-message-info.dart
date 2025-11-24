@@ -7,6 +7,7 @@ import 'package:chat_app/service/shared_preference.dart';
 import 'package:chat_app/constants/app_constant.dart';
 
 import '../../routes/app_routes.dart';
+import '../../src/theme/controller/chat_theme_controller.dart';
 
 
 class GroupMessageInfoScreen extends StatelessWidget {
@@ -28,7 +29,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Message Info'),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
       ),
       body: Obx(() {
         
@@ -68,7 +69,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: chatThemeController.theme.primaryColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(Icons.message, color: Colors.white, size: 20),
@@ -136,9 +137,9 @@ class GroupMessageInfoScreen extends StatelessWidget {
             Container(
               color: Colors.white,
               child: TabBar(
-                labelColor: Colors.blue,
+                labelColor: chatThemeController.theme.primaryColor,
                 unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.blue,
+                indicatorColor: chatThemeController.theme.primaryColor,
                 tabs: const [
                  
                   Tab(

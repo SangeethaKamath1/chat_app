@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../components/custom_button.dart';
 import '../components/custom_textfield.dart';
+import '../src/theme/controller/chat_theme_controller.dart';
 import 'controllers/auth_controller.dart';
 
 import '../routes/app_routes.dart';
@@ -23,12 +24,12 @@ class LoginScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
 
-              const Text(
+               Text(
                 "Welcome Back",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: chatThemeController.theme.primaryColor,
                 ),
               ),
               const SizedBox(height: 10),
@@ -73,10 +74,10 @@ class LoginScreen extends StatelessWidget {
                   const Text("Don't have an account? "),
                   GestureDetector(
                     onTap: () => Get.offNamed(AppRoutes.register),
-                    child: const Text(
+                    child:  Text(
                       "Register",
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: chatThemeController.theme.primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

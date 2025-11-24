@@ -1,10 +1,8 @@
 import 'package:chat_app/chat/chat_websocket/ping_web_socket.dart';
 import 'package:chat_app/chat/chat_websocket/subscribe_web_socket.dart';
+import 'package:chat_app/src/theme/controller/chat_theme_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../add_members/controller/add_members_controller.dart';
-import '../chat/chat_websocket/chat_web_socket_service.dart';
 import '../constants/app_constant.dart';
 import '../routes/app_routes.dart';
 import '../service/shared_preference.dart';
@@ -17,6 +15,7 @@ class RecentConversationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final RecentConversationController conversationController =
         Get.find<RecentConversationController>();
+        final ChatThemeController chatThemeController =Get.find<ChatThemeController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +32,7 @@ class RecentConversationScreen extends StatelessWidget {
             },
             child: Icon(Icons.group_add)),
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
         actions: [
           InkWell(
             onTap: () {
@@ -100,8 +99,8 @@ class RecentConversationScreen extends StatelessWidget {
                     return ListTile(
                       leading: Stack(
                         children: [
-                          const Icon(Icons.person,
-                              color: Colors.blue, size: 40),
+                           Icon(Icons.person,
+                              color: chatThemeController.theme.primaryColor, size: 40),
                           user.type == "PRIVATE_CHAT"
                               ? Positioned(
                                   bottom: 2,

@@ -11,6 +11,7 @@ import '../audio_call/controller/jitsi_call_controller.dart';
 
 import '../audio_call/service/webrtc_service.dart';
 import '../routes/app_routes.dart';
+import '../src/theme/controller/chat_theme_controller.dart';
 import 'components/chat_message_bubble.dart';
 import 'controller/chat_controller.dart';
 import 'helpers/encryption_helper.dart';
@@ -26,7 +27,7 @@ class ChatScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(chatController.name),
-        backgroundColor: Colors.blue,
+        backgroundColor: chatThemeController.theme.primaryColor,
         actions: [
           InkWell(
             onTap: () async {
@@ -238,7 +239,7 @@ class ChatScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: Colors.blue),
+                icon:  Icon(Icons.send, color: chatThemeController.theme.primaryColor),
                 onPressed: () => _handleSend(chatController),
               ),
             ],
@@ -259,7 +260,7 @@ class ChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(width: 4, height: 40, color: Colors.blue),
+          Container(width: 4, height: 40, color: chatThemeController.theme.primaryColor),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -267,9 +268,9 @@ class ChatScreen extends StatelessWidget {
               children: [
                 Text(
                   replyMsg.senderUsername ?? "Unknown",
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: chatThemeController.theme.primaryColor,
                   ),
                 ),
                 Text(

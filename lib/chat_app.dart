@@ -12,6 +12,6 @@ export 'audio_call/screens/call_screen.dart';
 export 'audio_call/controller/jitsi_call_controller.dart';
 export 'audio_call/service/webrtc_service.dart';
 export 'chat/controller/chat_controller.dart';
-
-
+export 'src/theme/chat_theme.dart';
+export 'src/theme/controller/chat_theme_controller.dart';
 export 'search/search_screen.dart';
