@@ -3,6 +3,10 @@ library chat_app;
 // Export Screens
 export 'chat/chat_screen.dart';
 export 'recent_conversation/recent_conversation_screen.dart';
+export 'recent_conversation/controller/recent_conversation_controller.dart';
+export 'group/create_group/controller/create_group_controller.dart';
+export 'group/group_detail/group_detail_screen.dart';
+export 'group/group_detail/controller/group_detail_controller.dart';
 export 'add_members/add_members_screen.dart';
 export 'audio_call/screens/call_screen.dart';
 
