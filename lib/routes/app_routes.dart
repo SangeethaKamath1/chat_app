@@ -56,8 +56,8 @@ class AppRoutes{
 
 
       GetPage(name:search,
-      page:()=>SearchScreen(),
-      binding: SearchBinding()),
+      page:()=>UserSearchScreen(),
+      binding: UserSearchBinding()),
 
       GetPage(name:recentConversation,
       page:()=>RecentConversationScreen(),

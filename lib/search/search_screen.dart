@@ -10,8 +10,8 @@ import '../src/theme/controller/chat_theme_controller.dart';
 import 'controller/search_controller.dart';
 
 
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({super.key});
+class UserSearchScreen extends StatelessWidget {
+  const UserSearchScreen({super.key});
 
 
 
