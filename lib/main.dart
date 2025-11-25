@@ -1,6 +1,4 @@
 
-
-import 'package:chat_app/audio_call/controller/jitsi_call_controller.dart';
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/group/create_group/controller/create_group_binding.dart';
 import 'package:chat_app/group/group_detail/controller/group_detail_controller.dart';

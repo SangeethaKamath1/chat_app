@@ -1,6 +1,4 @@
 import 'dart:convert';
-
-import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
 import 'package:chat_app/service/shared_preference.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
