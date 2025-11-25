@@ -5,8 +5,8 @@ import '../chat_theme.dart';
 class ChatConfigController extends GetxController {
   late ChatConfig config;
 
-  void setTheme(ChatConfig config) {
-    config = config;
+  void setTheme(ChatConfig value) {
+    config = value;
   }
 }
 
