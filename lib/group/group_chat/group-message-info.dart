@@ -205,7 +205,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
       itemCount: users.length,
       itemBuilder: (context, index) {
         final user = users[index];
-        final isCurrentUser = user.username == chatConfigController.config.prefs.getString(chatConfigController.config.constant.username);
+        final isCurrentUser = user.username == chatConfigController.config.prefs.getString(chatConfigController.config.username);
         
         return ListTile(
           leading: CircleAvatar(

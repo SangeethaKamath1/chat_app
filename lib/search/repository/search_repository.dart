@@ -10,7 +10,7 @@ import '../../model/search_model.dart';
 class SearchRepository{
 static  Future<SearchListResponse> searchUser(String username,String page)async{
   late final Response response;
-  final String token = chatConfigController.config.prefs.getString(chatConfigController.config.constant.token)??"";
+  final String token = chatConfigController.config.prefs.getString(chatConfigController.config.token)??"";
   try{
     
     response = await DioService().dio.get(ApiConstants.searchUser,

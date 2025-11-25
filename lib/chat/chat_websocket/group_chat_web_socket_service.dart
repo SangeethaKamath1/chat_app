@@ -34,7 +34,7 @@ class GroupChatWebSocketService extends GetxService{
   void connect(int conversationId){
 
     
-    channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token)}&conversationId=$conversationId"));
+    channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}&conversationId=$conversationId"));
         debugPrint("✅ [${hashCode}] group WebSocket connected");
     channel?.stream.listen((event){
        final data = jsonDecode(event);
@@ -111,7 +111,7 @@ if(data["replyTo"]!=null){
        "type": "typing",
       "isTyping": isTyping.toString(),
       "senderUsername":chatConfigController.config.prefs.getString(
-        chatConfigController.config.constant.username
+        chatConfigController.config.username
       )??""
       
     };

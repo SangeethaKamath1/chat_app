@@ -5,7 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ChatConfig {
   final Color primaryColor;
   final SharedPreferences prefs;
-final dynamic constant;
+final String token;
+final String conversationId;
+final String userId;
+final String username;
+
   // final Color accentColor;
   // final Color backgroundColor;
   // final Color textColor;
@@ -13,7 +17,11 @@ final dynamic constant;
   const ChatConfig({
     required this.primaryColor,
     required this.prefs,
-    required this.constant
+    required this.token,
+    required this.conversationId,
+    required this.userId,
+    required this.username
+    
     // required this.accentColor,
     // required this.backgroundColor,
     // required this.textColor,

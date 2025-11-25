@@ -64,7 +64,7 @@ class ChatScreen extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Obx(() => chatController.messageId.isNotEmpty &&
-                  chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId) ==
+                  chatConfigController.config.prefs.getString(chatConfigController.config.userId) ==
                       chatController
                           .conversations[chatController.chatIndex.value]
                           .senderUUID
@@ -115,7 +115,7 @@ class ChatScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final message = chatController.conversations[index];
                       final isMine = message.senderUsername ==
-                          chatConfigController.config.prefs.getString(chatConfigController.config.constant.username);
+                          chatConfigController.config.prefs.getString(chatConfigController.config.username);
 
                       return ChatMessageBubble(
                         message: message,

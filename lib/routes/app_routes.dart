@@ -35,16 +35,16 @@ class AppRoutes{
   static const String groupChatScreen="/groupChatScreen";
   static const String callScreen ="/callScreen";
   static List<GetPage> pages=[
-  GetPage(
-      name: login,
-      page: () => const LoginScreen(),
-    binding: AuthBinding()
-    ),
+  // GetPage(
+  //     name: login,
+  //     page: () => const LoginScreen(),
+  //   binding: AuthBinding()
+  //   ),
 
-    GetPage(
-      name:register,
-      page:()=>RegisterScreen(),
-      binding: AuthBinding()),
+  //   GetPage(
+  //     name:register,
+  //     page:()=>RegisterScreen(),
+  //     binding: AuthBinding()),
 
       GetPage(
       name:groupChatScreen,

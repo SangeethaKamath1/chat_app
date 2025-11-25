@@ -29,7 +29,7 @@ class ChatWebSocketService extends GetxService{
 
   
   void connect(int conversationId) {
-  channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.chatWebSocketService}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token)}&conversationId=$conversationId"));
+  channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.chatWebSocketService}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}&conversationId=$conversationId"));
   debugPrint("✅ [${hashCode}] WebSocket connected");
   
   channel?.stream.listen((event) async {

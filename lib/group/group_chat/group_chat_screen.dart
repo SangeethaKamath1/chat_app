@@ -30,7 +30,7 @@ class GroupChatScreen extends StatelessWidget {
           Obx(() { 
             int index = chatController.chatIndex.value;
             return chatController.messageId.isNotEmpty &&chatController.chatIndex.value!=-1&&
-                (chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId) ==
+                (chatConfigController.config.prefs.getString(chatConfigController.config.userId) ==
                           chatController
                               .conversations[index]
                               .senderUUID ||
@@ -123,7 +123,7 @@ class GroupChatScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final message = chatController.conversations[index];
                       final isMine = message.senderUsername ==
-                          chatConfigController.config.prefs.getString(chatConfigController.config.constant.username);
+                          chatConfigController.config.prefs.getString(chatConfigController.config.username);
 
                       return Column(
                         children: [
@@ -147,7 +147,7 @@ class GroupChatScreen extends StatelessWidget {
                       child: Align(
                           alignment: Alignment.topLeft,
                           child: Text(
-                            chatConfigController.config.prefs.getString(chatConfigController.config.constant.username)==chatController.typingUser.value?
+                            chatConfigController.config.prefs.getString(chatConfigController.config.username)==chatController.typingUser.value?
                             "You typing....":
                             "${chatController.typingUser.value} typing...",
                             textAlign: TextAlign.left,

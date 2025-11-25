@@ -58,7 +58,7 @@ class ChatMessageBubble extends StatelessWidget {
                   chatController.chatIndex.value = index;
                   chatController.messageId.value = message.id ?? "";
                   final Offset position = details.globalPosition;
-                  debugPrint("hellooo:${chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId) ==chatController.conversations[chatController.chatIndex.value].senderUUID},${chatController.currentGroupDetails.value.isAdmin},${chatController.currentGroupDetails.value.isOwner}");
+                  debugPrint("hellooo:${chatConfigController.config.prefs.getString(chatConfigController.config.userId) ==chatController.conversations[chatController.chatIndex.value].senderUUID},${chatController.currentGroupDetails.value.isAdmin},${chatController.currentGroupDetails.value.isOwner}");
           
                   showReactionOverlayForGroup(
                     context: context,

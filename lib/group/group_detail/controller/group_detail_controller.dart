@@ -27,7 +27,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
    
    nameController.text=Get.arguments['groupName'];
    descriptionController.text = Get.arguments['description'];
-    debugPrint("convo id:${chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0}");
+    debugPrint("convo id:${chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0}");
   getGroupDetails();
     super.onInit();
   }
@@ -35,7 +35,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
   Future<void> getGroupDetails()async{
     isEditing.value=false;
     try{
-      await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0).then((response){
+      await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
         if(response.id!=null){                   
           currentUser.value=response.currentUser??User();
           descriptionController.text=response.description??"";
@@ -49,7 +49,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
   Future<void> saveGroupDetails()async{
     isEditing.value=false;
     try{
-      await GroupDetailRepository.groupUpdate(chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0,nameController.value.text, descriptionController.value.text).then((response){
+      await GroupDetailRepository.groupUpdate(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0,nameController.value.text, descriptionController.value.text).then((response){
         if(response.message==ResponseMessage.groupUpdateSuccess){
             Fluttertoast.showToast(msg:"group updated successfully");
         }
@@ -62,13 +62,13 @@ Future<void> pickGroupIcon() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       groupIcon.value = File(picked.path);
-      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0);
+      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0);
 
     }
   }
 Future<void> exitGroup()async{
   try{
-    await GroupDetailRepository.exitGroup(chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0).then((response){
+    await GroupDetailRepository.exitGroup(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
 debugPrint("group exited successfully");
  Get.back();
   Get.back();

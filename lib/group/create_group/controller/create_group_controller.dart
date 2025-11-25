@@ -55,7 +55,7 @@ class CreateGroupController extends GetxController {
    Future<void> createGroup() async {
     isCreating.value =true;
     final List<int> selectedUsers = [];
-    selectedUsers.insert(0,int.parse(chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId)??""),);
+    selectedUsers.insert(0,int.parse(chatConfigController.config.prefs.getString(chatConfigController.config.userId)??""),);
     for(var ele in membersController.selectedUsers){
       selectedUsers.add(ele.id??0);
     }
