@@ -68,7 +68,7 @@ controller.viewMembers();
                             style: TextStyle(color: Colors.grey),
                           )
                         : null,
-                    trailing:int.parse(chatConfigController.config.prefs.getString(constant.userId)??"")==user.id ||user.isOwner==true
+                    trailing:int.parse(chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId)??"")==user.id ||user.isOwner==true
                         ? const SizedBox.shrink()
                         :controller.currentUserDetails.value.isAdmin==true||controller.currentUserDetails.value.isOwner==true?
                       PopupMenuButton<String>(

@@ -70,12 +70,12 @@ class _ReactionListBottomSheetState extends State<ReactionListBottomSheet>
                       itemBuilder: (context, index) {
                         final reaction = widget.chatController.reactions[index];
                         final currentUser =
-                            chatConfigController.config.prefs.getString(constant.username);
+                            chatConfigController.config.prefs.getString(chatConfigController.config.constant.username);
               
                         return ListTile(
                           onTap: (){
                             int chatIndex = widget.chatController.chatIndex.value;
-                            if(reaction.user?.username==chatConfigController.config.prefs.getString(constant.username)){
+                            if(reaction.user?.username==chatConfigController.config.prefs.getString(chatConfigController.config.constant.username)){
                                widget.chatController.chatWebSocket.sendReaction(
                     widget.messageId,
                     "",

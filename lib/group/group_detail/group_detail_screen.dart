@@ -13,7 +13,7 @@ class GroupDetailScreen extends StatelessWidget {
  final GroupDetailController controller = Get.find<GroupDetailController>();
   @override
   Widget build(BuildContext context) {
-    debugPrint("user id:${chatConfigController.config.prefs.getString(constant.userId)}");
+    debugPrint("user id:${chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId)}");
    
 
     return Scaffold(

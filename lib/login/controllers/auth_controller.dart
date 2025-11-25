@@ -49,7 +49,7 @@ Get.snackbar("Success", "Registered Successfully",
             usernameController.clear();
     passwordController.clear();
     isPasswordHidden.value = true;
-    chatConfigController.config.prefs.setString(constant.username, username);
+    chatConfigController.config.prefs.setString(chatConfigController.config.constant.username, username);
     //chatConfigController.config.prefs.setString(constant.userId,response.)
      Get.offNamed(AppRoutes.login); 
      }else{
@@ -72,9 +72,9 @@ Get.snackbar("Success", "Registered Successfully",
 if(response.token!=null){
   Get.snackbar("Success", "Login Success",
           snackPosition: SnackPosition.BOTTOM);
-chatConfigController.config.prefs.setString(constant.token, response.token??"");
-chatConfigController.config.prefs.setBool(constant.isLoggedIn, true);
-chatConfigController.config.prefs.setString(constant.username,usernameController.text);
+chatConfigController.config.prefs.setString(chatConfigController.config.constant.token, response.token??"");
+chatConfigController.config.prefs.setBool(chatConfigController.config.constant.isLoggedIn, true);
+chatConfigController.config.prefs.setString(chatConfigController.config.constant.username,usernameController.text);
 Get.put(PingWebSocketService(),permanent: true).connect();
 Get.toNamed(AppRoutes.recentConversation);
 }

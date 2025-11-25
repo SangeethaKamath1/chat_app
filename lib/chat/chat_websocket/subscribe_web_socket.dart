@@ -25,7 +25,7 @@ void subscribe(int conversationId, int userId,Item item){
 
   try{
     
-    final subscribeChannnel=IOWebSocketChannel.connect(Uri.parse("${ApiConstants.subscriptionWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token)??""}&type=subscribe&target=${userId.toString()}&convoId=${conversationId.toString()}"));
+    final subscribeChannnel=IOWebSocketChannel.connect(Uri.parse("${ApiConstants.subscriptionWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token)??""}&type=subscribe&target=${userId.toString()}&convoId=${conversationId.toString()}"));
     _sockets[userId]=subscribeChannnel;
    debugPrint("✅ subscribe WebSocket connected for user $userId");
 

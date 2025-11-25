@@ -146,7 +146,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
         Conversations(
           id: "${conversationId}_${uuid.v4()}",
           message: text,
-          senderUsername: chatConfigController.config.prefs.getString(constant.username),
+          senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
           replayTo: replyTo, // <-- custom field
         ));
         conversations.refresh();
@@ -188,7 +188,7 @@ conversations.insert(
     Conversations(
       id: messageId,
       message: text,
-      senderUsername: chatConfigController.config.prefs.getString(constant.username),
+      senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
       status: "SEND",
     ),
   );
@@ -237,7 +237,7 @@ conversations.insert(
               id: "${conversationId}_${uuid.v4()}",
               message: messageController.text,
               senderUsername:
-                  chatConfigController.config.prefs.getString(constant.username),
+                  chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
               status: "SEND"));
 
       conversations.refresh();

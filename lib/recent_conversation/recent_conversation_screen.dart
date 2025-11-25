@@ -22,7 +22,7 @@ class RecentConversationScreen extends StatelessWidget {
         title:  Text("Conversations",style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.black:Colors.white,),),
         leading: InkWell(
             onTap: () {
-               chatConfigController.config.prefs.setInt(constant.conversationId, 0);
+               chatConfigController.config.prefs.setInt(chatConfigController.config.constant.conversationId, 0);
               Get.toNamed(AppRoutes.createGroup)?.then((_) {
                 conversationController.page = 0;
                 conversationController.isLastPage = false;
@@ -139,7 +139,7 @@ class RecentConversationScreen extends StatelessWidget {
                           : const SizedBox.shrink()),
                       onTap: () {
                         chatConfigController.config.prefs
-                            .setInt(constant.conversationId, user.id ?? 0);
+                            .setInt(chatConfigController.config.constant.conversationId, user.id ?? 0);
                         Get.delete<PingWebSocketService>(force: true);
                         Get.put(PingWebSocketService()).connect();
                         user.type == "PRIVATE_CHAT"

@@ -119,7 +119,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   }
 
   Future<void> getCurrentGroupDetails()async{
-    await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(constant.conversationId)??0).then((response){
+    await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0).then((response){
 currentGroupDetails.value = response.currentUser??User();
 name.value = response.groupName??"";
 description.value=response.description??'';
@@ -149,7 +149,7 @@ description.value=response.description??'';
         Conversations(
           id: "${conversationId}_${uuid.v4()}",
           message: text,
-          senderUsername: chatConfigController.config.prefs.getString(constant.username),
+          senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
           replayTo: replyTo, // <-- custom field
         ));
   conversations.refresh();
@@ -183,13 +183,13 @@ description.value=response.description??'';
   final messageId = "${conversationId}_${uuid.v4()}";
    debugPrint("🔍 Sending message with ID: $messageId"); // 🟢 Add this
   debugPrint("🔍 WebSocket hashCode: ${chatWebSocket.hashCode}");
-  debugPrint("sender user name:${chatConfigController.config.prefs.getString(constant.username)}");
+  debugPrint("sender user name:${chatConfigController.config.prefs.getString(chatConfigController.config.constant.username)}");
 conversations.insert(
     0,
     Conversations(
       id: messageId,
       message: text,
-      senderUsername: chatConfigController.config.prefs.getString(constant.username),
+      senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
       status: "SEND",
     ),
   );
@@ -257,7 +257,7 @@ debugPrint("something went wrong:$e");
               id: "${conversationId}_${uuid.v4()}",
               message: messageController.text,
               senderUsername:
-                  chatConfigController.config.prefs.getString(constant.username),
+                  chatConfigController.config.prefs.getString(chatConfigController.config.constant.username),
               status: "SEND"));
 
       conversations.refresh();

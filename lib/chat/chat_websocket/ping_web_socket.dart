@@ -17,11 +17,11 @@ class PingWebSocketService extends FullLifeCycleController
 
   void connect() async {
   try {
-    debugPrint("fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping")}");
+    debugPrint("fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token) ?? ""}&type=ping")}");
     channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token) ?? ""}&type=ping"),
     );
-    debugPrint("✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(constant.userId)}");
+    debugPrint("✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId)}");
     debugPrint("connection success:");
     channel.stream.listen((event){
         final data = jsonDecode(event);
@@ -38,12 +38,12 @@ class PingWebSocketService extends FullLifeCycleController
     onError: (e){
       debugPrint("✅ ping WebSocket connection closed onError");
         channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token) ?? ""}&type=ping"),
     );
     });
   } catch (e) {
       channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.constant.token) ?? ""}&type=ping"),
     );
 
      debugPrint("✅ ping WebSocket connection closed on catch");

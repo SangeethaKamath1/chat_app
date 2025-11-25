@@ -14,13 +14,13 @@ class GroupChatRepository {
 
  static Future<CreateGroupResponse> createGroup(String groupName,List<int> users,String description)async{
   late final Response response;
-  final token =chatConfigController.config.prefs.getString(constant.token);
+  final token =chatConfigController.config.prefs.getString(chatConfigController.config.constant.token);
   try{
   response =await DioService().dio.post(ApiConstants.createGroup,
   options: Options(headers: {"authorization":"Bearer $token"}),
   data:
 jsonEncode({
-  "userId":chatConfigController.config.prefs.getString(constant.userId),
+  "userId":chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId),
   "groupName":groupName,
   "description":description,
   "users":users
@@ -44,7 +44,7 @@ throw Exception("something went wrong");
 
 static Future<GroupMessageStatus> fetchMessageStatus(String messageId)async{
   late final Response response;
-  final token =chatConfigController.config.prefs.getString(constant.token);
+  final token =chatConfigController.config.prefs.getString(chatConfigController.config.constant.token);
   try{
   response =await DioService().dio.get("${ApiConstants.messageStatus}/$messageId",
   options: Options(headers: {"authorization":"Bearer $token"}),

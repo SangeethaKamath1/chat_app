@@ -48,8 +48,8 @@ class AuthRepository {
 
             final decodedToken = JWT.tryDecode(loginData.token??"");
           final userId = decodedToken?.payload["jti"];
-          chatConfigController.config.prefs.setString(constant.userId,userId);
-          debugPrint("user id:${chatConfigController.config.prefs.getString(constant.userId)}");
+          chatConfigController.config.prefs.setString(chatConfigController.config.constant.userId,userId);
+          debugPrint("user id:${chatConfigController.config.prefs.getString(chatConfigController.config.constant.userId)}");
           return loginData;
           
         }

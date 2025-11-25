@@ -12,7 +12,7 @@ class RecentConversationRepository{
 
 static   Future<RecentConversation> recentConversationList(String searchQuery,int page)async{
   late final Response response;
-  final token = chatConfigController.config.prefs.getString(constant.token);
+  final token = chatConfigController.config.prefs.getString(chatConfigController.config.constant.token);
   debugPrint("token:$token");
   try{
 response = await DioService().dio.get(ApiConstants.recentConversationList,queryParameters: {

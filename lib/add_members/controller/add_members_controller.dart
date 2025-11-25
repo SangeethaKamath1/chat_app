@@ -61,7 +61,7 @@ debugPrint("from create group inside the controller:$fromCreateGroup");
     for(var ele in selectedUsers){
       users.add(ele.id??0);
     }
-    await GroupDetailRepository.addMembers(chatConfigController.config.prefs.getInt(constant.conversationId)??0, users).then((response){
+    await GroupDetailRepository.addMembers(chatConfigController.config.prefs.getInt(chatConfigController.config.constant.conversationId)??0, users).then((response){
       if(response.message==ResponseMessage.memberAddSuccess){
         Fluttertoast.showToast(msg:"Member added successfully");
         tempUsers.assignAll(selectedUsers);

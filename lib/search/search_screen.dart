@@ -70,7 +70,7 @@ class UserSearchScreen extends StatelessWidget {
                       leading:  Icon(Icons.person, color: chatConfigController.config.primaryColor),
                       title: Text(user.username??""),
                       onTap: () {
-                        chatConfigController.config.prefs.setInt(constant.conversationId, user.conversationId??0);
+                        chatConfigController.config.prefs.setInt(chatConfigController.config.constant.conversationId, user.conversationId??0);
                        Get.delete<PingWebSocketService>(force: true);
    Get.put(PingWebSocketService()).connect();
                        Get.toNamed(AppRoutes.chat,
