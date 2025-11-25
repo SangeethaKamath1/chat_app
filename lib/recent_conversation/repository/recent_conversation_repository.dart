@@ -15,7 +15,7 @@ static   Future<RecentConversation> recentConversationList(String searchQuery,in
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
   debugPrint("token:$token");
   try{
-response = await DioService().dio.get(ApiConstants.recentConversationList,queryParameters: {
+response = await chatConfigController.config.dioService.get(ApiConstants.recentConversationList,queryParameters: {
   "searchQuery":searchQuery,
   "page":page,
   "size":20

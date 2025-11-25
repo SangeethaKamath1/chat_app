@@ -18,7 +18,7 @@ static   Future<CreateConversationModel> createConversation(String conversationI
   late final Response response;
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-response = await DioService().dio.post("${ApiConstants.createConversation}/$conversationId",
+response = await chatConfigController.config.dioService.post("${ApiConstants.createConversation}/$conversationId",
 options: Options(headers: {"Authorization":"Bearer $token"}));
 
 if(response.statusCode==200){
@@ -35,7 +35,7 @@ throw Exception("Something went wrong");
   late final Response response;
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-response = await DioService().dio.get("${ApiConstants.chatHistory}/$conversationId",
+response = await chatConfigController.config.dioService.get("${ApiConstants.chatHistory}/$conversationId",
 queryParameters: {
   "page":page,
   "size":20
@@ -56,7 +56,7 @@ throw Exception("Something went wrong");
   late final Response response;
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-response = await DioService().dio.get("${ApiConstants.currentUserDetails}/$conversationId",
+response = await chatConfigController.config.dioService.get("${ApiConstants.currentUserDetails}/$conversationId",
 
 options: Options(headers: {"Authorization":"Bearer $token"}));
 
@@ -75,7 +75,7 @@ throw Exception("Something went wrong");
   late final Response response;
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-response = await DioService().dio.get("${ApiConstants.emojiList}/$messageId",
+response = await chatConfigController.config.dioService.get("${ApiConstants.emojiList}/$messageId",
 queryParameters: {
   "page":page,
   "size":20

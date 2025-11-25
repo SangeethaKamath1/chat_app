@@ -16,7 +16,7 @@ class GroupChatRepository {
   late final Response response;
   final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-  response =await DioService().dio.post(ApiConstants.createGroup,
+  response =await chatConfigController.config.dioService.post(ApiConstants.createGroup,
   options: Options(headers: {"authorization":"Bearer $token"}),
   data:
 jsonEncode({
@@ -46,7 +46,7 @@ static Future<GroupMessageStatus> fetchMessageStatus(String messageId)async{
   late final Response response;
   final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
   try{
-  response =await DioService().dio.get("${ApiConstants.messageStatus}/$messageId",
+  response =await chatConfigController.config.dioService.get("${ApiConstants.messageStatus}/$messageId",
   options: Options(headers: {"authorization":"Bearer $token"}),
   );
   if(response.statusCode==200){

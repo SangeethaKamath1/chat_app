@@ -13,7 +13,7 @@ static  Future<SearchListResponse> searchUser(String username,String page)async{
   final String token = chatConfigController.config.prefs.getString(chatConfigController.config.token)??"";
   try{
     
-    response = await DioService().dio.get(ApiConstants.searchUser,
+    response = await chatConfigController.config.dioService.get(ApiConstants.searchUser,
     options: Options(headers:{"Authorization":"Bearer $token"}),
     queryParameters:{
       "username":username,

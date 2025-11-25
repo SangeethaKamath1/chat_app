@@ -1,4 +1,5 @@
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +10,7 @@ final String token;
 final String conversationId;
 final String userId;
 final String username;
+final Dio dioService;
 
   // final Color accentColor;
   // final Color backgroundColor;
@@ -20,7 +22,9 @@ final String username;
     required this.token,
     required this.conversationId,
     required this.userId,
-    required this.username
+    required this.username,
+    required this.dioService
+
     
     // required this.accentColor,
     // required this.backgroundColor,

@@ -30,7 +30,7 @@ class GroupDetailRepository{
           ),
         ),
       );
-    response = await DioService().dio.post("${ApiConstants.setGroupIcon}$groupId",data:formData,
+    response = await chatConfigController.config.dioService.post("${ApiConstants.setGroupIcon}$groupId",data:formData,
     options:Options(headers: {"Authorization":"Bearer $token"})
     
 
@@ -52,7 +52,7 @@ throw Exception("something went wrong");
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.get("${ApiConstants.viewMembers}$groupId",
+    response = await chatConfigController.config.dioService.get("${ApiConstants.viewMembers}$groupId",
     queryParameters: {
       "page":page,
       "size":20
@@ -76,7 +76,7 @@ static Future<StatusModel> addMembers(int groupId,List<int> users)async{
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.post(ApiConstants.addMember,
+    response = await chatConfigController.config.dioService.post(ApiConstants.addMember,
     data:jsonEncode({
       "conversationId":groupId,
       "users":users
@@ -105,7 +105,7 @@ static Future<StatusModel> removeMember(int conversationId,int memberId)async{
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.post(ApiConstants.removeMember,
+    response = await chatConfigController.config.dioService.post(ApiConstants.removeMember,
     queryParameters:{
       "conversationId":conversationId,
       "memberId":memberId
@@ -139,7 +139,7 @@ static Future<StatusModel> groupUpdate(int conversationId, String groupName,Stri
       "conversationId":conversationId,
       "description":description
     })}");
-    response = await DioService().dio.post(ApiConstants.updateGroup,
+    response = await chatConfigController.config.dioService.post(ApiConstants.updateGroup,
     data:jsonEncode({
       "groupName":groupName,
       "conversationId":conversationId,
@@ -170,7 +170,7 @@ static Future<StatusModel> exitGroup(int conversationId)async{
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.post("${ApiConstants.exitGroup}/$conversationId",
+    response = await chatConfigController.config.dioService.post("${ApiConstants.exitGroup}/$conversationId",
     
     options:Options(headers: {"Authorization":"Bearer $token"})
     
@@ -195,7 +195,7 @@ static Future<GroupDetailsResponse> groupDetails(int conversationId)async{
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.get("${ApiConstants.currentGroupDetails}/$conversationId",
+    response = await chatConfigController.config.dioService.get("${ApiConstants.currentGroupDetails}/$conversationId",
     
     options:Options(headers: {"Authorization":"Bearer $token"})
     
@@ -219,7 +219,7 @@ static Future<StatusModel> memberPromote(int conversationId, int memberId,bool i
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
-    response = await DioService().dio.post(ApiConstants.memberPromote,
+    response = await chatConfigController.config.dioService.post(ApiConstants.memberPromote,
     queryParameters:{
       
       "conversationId":conversationId,
