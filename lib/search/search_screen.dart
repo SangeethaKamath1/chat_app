@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import '../chat/chat_websocket/ping_web_socket.dart';
 import '../constants/app_constant.dart';
 import '../routes/app_routes.dart';
-import '../service/shared_preference.dart';
+
 import '../src/theme/controller/chat_theme_controller.dart';
 import 'controller/search_controller.dart';
 
@@ -22,7 +22,7 @@ class UserSearchScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Search User"),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
       ),
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification){
@@ -67,10 +67,10 @@ class UserSearchScreen extends StatelessWidget {
                       debugPrint("user id:${user.id}");
                       }
                     return ListTile(
-                      leading:  Icon(Icons.person, color: chatThemeController.theme.primaryColor),
+                      leading:  Icon(Icons.person, color: chatConfigController.config.primaryColor),
                       title: Text(user.username??""),
                       onTap: () {
-                        SharedPreference().setInt(AppConstant.conversationId, user.conversationId??0);
+                        chatConfigController.config.prefs.setInt(constant.conversationId, user.conversationId??0);
                        Get.delete<PingWebSocketService>(force: true);
    Get.put(PingWebSocketService()).connect();
                        Get.toNamed(AppRoutes.chat,

@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:web_socket_channel/io.dart';
 
+import '../../chat_app.dart';
 import '../../constants/api_constants.dart';
 import '../../constants/app_constant.dart';
 import 'package:web_socket_channel/status.dart' as status;
@@ -33,7 +34,7 @@ class GroupChatWebSocketService extends GetxService{
   void connect(int conversationId){
 
     
-    channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token)}&conversationId=$conversationId"));
+    channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token)}&conversationId=$conversationId"));
         debugPrint("✅ [${hashCode}] group WebSocket connected");
     channel?.stream.listen((event){
        final data = jsonDecode(event);
@@ -109,8 +110,8 @@ if(data["replyTo"]!=null){
     final payload = {
        "type": "typing",
       "isTyping": isTyping.toString(),
-      "senderUsername":SharedPreference().getString(
-        AppConstant.username
+      "senderUsername":chatConfigController.config.prefs.getString(
+        constant.username
       )??""
       
     };

@@ -1,9 +1,10 @@
 import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
+import '../../chat_app.dart';
 import '../../routes/app_routes.dart';
 import 'controller/group_detail_controller.dart';
 
@@ -12,7 +13,7 @@ class GroupDetailScreen extends StatelessWidget {
  final GroupDetailController controller = Get.find<GroupDetailController>();
   @override
   Widget build(BuildContext context) {
-    debugPrint("user id:${SharedPreference().getString(AppConstant.userId)}");
+    debugPrint("user id:${chatConfigController.config.prefs.getString(constant.userId)}");
    
 
     return Scaffold(

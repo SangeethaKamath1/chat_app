@@ -3,9 +3,10 @@ import 'package:chat_app/register/repository/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import '../../chat_app.dart';
 import '../../constants/app_constant.dart';
 import '../../routes/app_routes.dart';
-import '../../service/shared_preference.dart';
+
 
 
 class AuthController extends GetxController {
@@ -48,8 +49,8 @@ Get.snackbar("Success", "Registered Successfully",
             usernameController.clear();
     passwordController.clear();
     isPasswordHidden.value = true;
-    SharedPreference().setString(AppConstant.username, username);
-    //SharedPreference().setString(AppConstant.userId,response.)
+    chatConfigController.config.prefs.setString(constant.username, username);
+    //chatConfigController.config.prefs.setString(constant.userId,response.)
      Get.offNamed(AppRoutes.login); 
      }else{
       debugPrint("Something went wrong");
@@ -71,9 +72,9 @@ Get.snackbar("Success", "Registered Successfully",
 if(response.token!=null){
   Get.snackbar("Success", "Login Success",
           snackPosition: SnackPosition.BOTTOM);
-SharedPreference().setString(AppConstant.token, response.token??"");
-SharedPreference().setBool(AppConstant.isLoggedIn, true);
-SharedPreference().setString(AppConstant.username,usernameController.text);
+chatConfigController.config.prefs.setString(constant.token, response.token??"");
+chatConfigController.config.prefs.setBool(constant.isLoggedIn, true);
+chatConfigController.config.prefs.setString(constant.username,usernameController.text);
 Get.put(PingWebSocketService(),permanent: true).connect();
 Get.toNamed(AppRoutes.recentConversation);
 }
@@ -86,7 +87,7 @@ Get.toNamed(AppRoutes.recentConversation);
 
   /// Logout user
   Future<void> logout() async {
-    SharedPreference().clear();
+    chatConfigController.config.prefs.clear();
     loggedInUser.value = '';
     Get.offAllNamed(AppRoutes.login);
   }

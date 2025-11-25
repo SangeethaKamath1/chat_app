@@ -16,7 +16,7 @@ class AddMembersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add Members"),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           TextButton(
             onPressed:(){

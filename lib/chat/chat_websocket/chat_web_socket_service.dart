@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:chat_app/service/shared_preference.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -7,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
 import '../../audio_call/screens/incoming_call_screen.dart';
 import '../../audio_call/service/webrtc_service.dart';
+import '../../chat_app.dart';
 import '../../constants/api_constants.dart';
 import '../../constants/app_constant.dart';
 import 'package:web_socket_channel/status.dart' as status;
@@ -29,7 +29,7 @@ class ChatWebSocketService extends GetxService{
 
   
   void connect(int conversationId) {
-  channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.chatWebSocketService}?token=${SharedPreference().getString(AppConstant.token)}&conversationId=$conversationId"));
+  channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.chatWebSocketService}?token=${chatConfigController.config.prefs.getString(constant.token)}&conversationId=$conversationId"));
   debugPrint("✅ [${hashCode}] WebSocket connected");
   
   channel?.stream.listen((event) async {

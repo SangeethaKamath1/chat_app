@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../constants/app_constant.dart';
 import '../../helpers.dart';
-import '../../service/shared_preference.dart';
+
 import '../../src/theme/controller/chat_theme_controller.dart';
 import '../controller/chat_controller.dart';
 
@@ -62,7 +62,7 @@ class ChatMessageBubble extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         vertical: 10, horizontal: 14),
                     decoration: BoxDecoration(
-                      color: isMine ? chatThemeController.theme.primaryColor : Colors.grey[300],
+                      color: isMine ? chatConfigController.config.primaryColor : Colors.grey[300],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -97,7 +97,7 @@ class ChatMessageBubble extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: isMine ? chatThemeController.theme.primaryColor : Colors.grey[200],
+        color: isMine ? chatConfigController.config.primaryColor : Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -107,7 +107,7 @@ class ChatMessageBubble extends StatelessWidget {
             message.replayTo!.senderUsername ?? "Unknown",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isMine ? chatThemeController.theme.primaryColor : Colors.black87,
+              color: isMine ? chatConfigController.config.primaryColor : Colors.black87,
               fontSize: 12,
             ),
           ),

@@ -1,7 +1,7 @@
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
 import 'package:chat_app/group/group_chat/group-message-info.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -25,12 +25,12 @@ class GroupChatScreen extends StatelessWidget {
             return Text(chatController.name.value);
           }
         ),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           Obx(() { 
             int index = chatController.chatIndex.value;
             return chatController.messageId.isNotEmpty &&chatController.chatIndex.value!=-1&&
-                (SharedPreference().getString(AppConstant.userId) ==
+                (chatConfigController.config.prefs.getString(constant.userId) ==
                           chatController
                               .conversations[index]
                               .senderUUID ||
@@ -67,7 +67,7 @@ class GroupChatScreen extends StatelessWidget {
                     ),
                   );
                 }):
-                  // SharedPreference().setInt(AppConstant.conversationId, int.parse(chatController.conversationId));
+                  // chatConfigController.config.prefs.setInt(constant.conversationId, int.parse(chatController.conversationId));
                   Get.toNamed(AppRoutes.groupDetail, arguments: {
                     "groupName": chatController.name.value,
                     'description':chatController.description.value
@@ -123,7 +123,7 @@ class GroupChatScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final message = chatController.conversations[index];
                       final isMine = message.senderUsername ==
-                          SharedPreference().getString(AppConstant.username);
+                          chatConfigController.config.prefs.getString(constant.username);
 
                       return Column(
                         children: [
@@ -147,7 +147,7 @@ class GroupChatScreen extends StatelessWidget {
                       child: Align(
                           alignment: Alignment.topLeft,
                           child: Text(
-                            SharedPreference().getString(AppConstant.username)==chatController.typingUser.value?
+                            chatConfigController.config.prefs.getString(constant.username)==chatController.typingUser.value?
                             "You typing....":
                             "${chatController.typingUser.value} typing...",
                             textAlign: TextAlign.left,
@@ -253,7 +253,7 @@ class GroupChatScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon:  Icon(Icons.send, color: chatThemeController.theme.primaryColor),
+                icon:  Icon(Icons.send, color: chatConfigController.config.primaryColor),
                 onPressed: () => _handleSend(chatController),
               ),
             ],
@@ -274,7 +274,7 @@ class GroupChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(width: 4, height: 40, color: chatThemeController.theme.primaryColor),
+          Container(width: 4, height: 40, color: chatConfigController.config.primaryColor),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -284,7 +284,7 @@ class GroupChatScreen extends StatelessWidget {
                   replyMsg.senderUsername ?? "Unknown",
                   style:  TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: chatThemeController.theme.primaryColor,
+                    color: chatConfigController.config.primaryColor,
                   ),
                 ),
                 Text(

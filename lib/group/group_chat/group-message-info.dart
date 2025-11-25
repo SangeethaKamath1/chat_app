@@ -3,7 +3,7 @@ import 'package:chat_app/model/group_message_status.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:chat_app/constants/app_constant.dart';
 
 import '../../routes/app_routes.dart';
@@ -29,7 +29,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Message Info'),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
       ),
       body: Obx(() {
         
@@ -69,7 +69,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: chatThemeController.theme.primaryColor,
+              color: chatConfigController.config.primaryColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(Icons.message, color: Colors.white, size: 20),
@@ -137,9 +137,9 @@ class GroupMessageInfoScreen extends StatelessWidget {
             Container(
               color: Colors.white,
               child: TabBar(
-                labelColor: chatThemeController.theme.primaryColor,
+                labelColor: chatConfigController.config.primaryColor,
                 unselectedLabelColor: Colors.grey,
-                indicatorColor: chatThemeController.theme.primaryColor,
+                indicatorColor: chatConfigController.config.primaryColor,
                 tabs: const [
                  
                   Tab(
@@ -205,7 +205,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
       itemCount: users.length,
       itemBuilder: (context, index) {
         final user = users[index];
-        final isCurrentUser = user.username == SharedPreference().getString(AppConstant.username);
+        final isCurrentUser = user.username == chatConfigController.config.prefs.getString(constant.username);
         
         return ListTile(
           leading: CircleAvatar(

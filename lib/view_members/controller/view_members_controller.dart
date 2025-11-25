@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/group/group_detail/repository/group_detail_repository.dart';
 import 'package:chat_app/model/group_member.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
+import '../../chat_app.dart';
 import '../../model/user.dart';
 
 
@@ -49,7 +50,7 @@ final  Rx<User> currentUserDetails=User().obs;
   try {
     isLoadingMembers.value = true;
 
-    final conversationId = SharedPreference().getInt(AppConstant.conversationId) ?? 0;
+    final conversationId = chatConfigController.config.prefs.getInt(constant.conversationId) ?? 0;
     final response = await GroupDetailRepository.viewMembers(conversationId, memberPageNumber);
 currentUserDetails.value= response.groupDetails?.currentUser??User();
     isLoadingMembers.value = false;
@@ -79,7 +80,7 @@ final totalPages = response.members?.totalPages?.toInt();
 
 Future<void> promoteToAdmin(int index,int memberId,bool isAdmin)async{
   try{
-    await GroupDetailRepository.memberPromote(SharedPreference().getInt(AppConstant.conversationId)??0,memberId, isAdmin).then((response){
+    await GroupDetailRepository.memberPromote(chatConfigController.config.prefs.getInt(constant.conversationId)??0,memberId, isAdmin).then((response){
         Fluttertoast.showToast(msg: response.message??"");
        groupMembers[index].isAdmin.value=!groupMembers[index].isAdmin.value;
     });
@@ -100,7 +101,7 @@ Future<void> promoteToAdmin(int index,int memberId,bool isAdmin)async{
 
   Future<void> removeMember(int memberId)async{
     try{
-await GroupDetailRepository.removeMember(SharedPreference().getInt(AppConstant.conversationId)??0, memberId).then((response){
+await GroupDetailRepository.removeMember(chatConfigController.config.prefs.getInt(constant.conversationId)??0, memberId).then((response){
   if(response.message==ResponseMessage.removeMemberSuccess){
 Fluttertoast.showToast(msg:"member removed successfully");
 groupMembers.removeWhere((ele)=>ele.id==memberId);

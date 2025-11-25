@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../constants/app_constant.dart';
 import '../routes/app_routes.dart';
-import '../service/shared_preference.dart';
+
 import 'controller/recent_conversation_controller.dart';
 
 class RecentConversationScreen extends StatelessWidget {
@@ -15,14 +15,14 @@ class RecentConversationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final RecentConversationController conversationController =
         Get.find<RecentConversationController>();
-        final ChatThemeController chatThemeController =Get.find<ChatThemeController>();
+    
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Conversations"),
+        title:  Text("Conversations",style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.black:Colors.white,),),
         leading: InkWell(
             onTap: () {
-               SharedPreference().setInt(AppConstant.conversationId, 0);
+               chatConfigController.config.prefs.setInt(constant.conversationId, 0);
               Get.toNamed(AppRoutes.createGroup)?.then((_) {
                 conversationController.page = 0;
                 conversationController.isLastPage = false;
@@ -32,7 +32,7 @@ class RecentConversationScreen extends StatelessWidget {
             },
             child: Icon(Icons.group_add)),
         automaticallyImplyLeading: false,
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           InkWell(
             onTap: () {
@@ -100,7 +100,7 @@ class RecentConversationScreen extends StatelessWidget {
                       leading: Stack(
                         children: [
                            Icon(Icons.person,
-                              color: chatThemeController.theme.primaryColor, size: 40),
+                              color: chatConfigController.config.primaryColor, size: 40),
                           user.type == "PRIVATE_CHAT"
                               ? Positioned(
                                   bottom: 2,
@@ -138,8 +138,8 @@ class RecentConversationScreen extends StatelessWidget {
                             )
                           : const SizedBox.shrink()),
                       onTap: () {
-                        SharedPreference()
-                            .setInt(AppConstant.conversationId, user.id ?? 0);
+                        chatConfigController.config.prefs
+                            .setInt(constant.conversationId, user.id ?? 0);
                         Get.delete<PingWebSocketService>(force: true);
                         Get.put(PingWebSocketService()).connect();
                         user.type == "PRIVATE_CHAT"

@@ -6,9 +6,10 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../add_members/controller/add_members_controller.dart';
+import '../../../chat_app.dart';
 import '../../../constants/app_constant.dart';
 import '../../../model/create_group_response.dart';
-import '../../../service/shared_preference.dart';
+
 import '../../repository/group_chat_repository.dart';
 
 class CreateGroupController extends GetxController {
@@ -54,7 +55,7 @@ class CreateGroupController extends GetxController {
    Future<void> createGroup() async {
     isCreating.value =true;
     final List<int> selectedUsers = [];
-    selectedUsers.insert(0,int.parse(SharedPreference().getString(AppConstant.userId)??""),);
+    selectedUsers.insert(0,int.parse(chatConfigController.config.prefs.getString(constant.userId)??""),);
     for(var ele in membersController.selectedUsers){
       selectedUsers.add(ele.id??0);
     }

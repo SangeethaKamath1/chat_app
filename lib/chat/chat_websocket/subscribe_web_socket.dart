@@ -5,8 +5,9 @@ import 'package:chat_app/constants/app_constant.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
+import '../../chat_app.dart';
 import '../../model/recent_conversation.dart';
-import '../../service/shared_preference.dart';
+
 import 'package:web_socket_channel/status.dart' as status;
 
 class SubscribeWebSocketService extends GetxService{
@@ -24,7 +25,7 @@ void subscribe(int conversationId, int userId,Item item){
 
   try{
     
-    final subscribeChannnel=IOWebSocketChannel.connect(Uri.parse("${ApiConstants.subscriptionWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token)??""}&type=subscribe&target=${userId.toString()}&convoId=${conversationId.toString()}"));
+    final subscribeChannnel=IOWebSocketChannel.connect(Uri.parse("${ApiConstants.subscriptionWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token)??""}&type=subscribe&target=${userId.toString()}&convoId=${conversationId.toString()}"));
     _sockets[userId]=subscribeChannnel;
    debugPrint("✅ subscribe WebSocket connected for user $userId");
 

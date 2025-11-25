@@ -2,12 +2,12 @@ import 'package:get/get.dart';
 
 import '../chat_theme.dart';
 
-class ChatThemeController extends GetxController {
-  late ChatTheme theme;
+class ChatConfigController extends GetxController {
+  late ChatConfig config;
 
-  void setTheme(ChatTheme newTheme) {
-    theme = newTheme;
+  void setTheme(ChatConfig config) {
+    config = config;
   }
 }
 
-ChatThemeController get chatThemeController => Get.find<ChatThemeController>();
+ChatConfigController get chatConfigController => Get.find<ChatConfigController>();

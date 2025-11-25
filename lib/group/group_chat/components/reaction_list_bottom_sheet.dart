@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../constants/app_constant.dart';
-import '../../../service/shared_preference.dart';
+
 import '../../../src/theme/controller/chat_theme_controller.dart';
 import '../controller/group_chat_controller.dart';
 
@@ -70,12 +70,12 @@ class _ReactionListBottomSheetState extends State<ReactionListBottomSheet>
                       itemBuilder: (context, index) {
                         final reaction = widget.chatController.reactions[index];
                         final currentUser =
-                            SharedPreference().getString(AppConstant.username);
+                            chatConfigController.config.prefs.getString(constant.username);
               
                         return ListTile(
                           onTap: (){
                             int chatIndex = widget.chatController.chatIndex.value;
-                            if(reaction.user?.username==SharedPreference().getString(AppConstant.username)){
+                            if(reaction.user?.username==chatConfigController.config.prefs.getString(constant.username)){
                                widget.chatController.chatWebSocket.sendReaction(
                     widget.messageId,
                     "",
@@ -94,7 +94,7 @@ class _ReactionListBottomSheetState extends State<ReactionListBottomSheet>
                          
                           },
                           leading: CircleAvatar(
-                            backgroundColor: chatThemeController.theme.primaryColor,
+                            backgroundColor: chatConfigController.config.primaryColor,
                             child: Text(
                               reaction.reaction ?? "",
                               style: const TextStyle(fontSize: 20),

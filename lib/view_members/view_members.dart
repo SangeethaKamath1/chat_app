@@ -1,5 +1,4 @@
 import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -18,7 +17,7 @@ controller.viewMembers();
     return Scaffold(
       appBar: AppBar(
         title: const Text("View Members"),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           TextButton(
             onPressed: () {},
@@ -58,7 +57,7 @@ controller.viewMembers();
                 itemCount: controller.groupMembers.length,
                 itemBuilder: (context, index) {
                   final user = controller.groupMembers[index];
-                 // debugPrint("member id:${controller.groupMembers[4].id},${SharedPreference().getString(AppConstant.userId)}");
+                 // debugPrint("member id:${controller.groupMembers[4].id},${chatConfigController.config.prefs.getString(constant.userId)}");
 
                   return ListTile(
                     leading: const Icon(Icons.person),
@@ -69,7 +68,7 @@ controller.viewMembers();
                             style: TextStyle(color: Colors.grey),
                           )
                         : null,
-                    trailing:int.parse(SharedPreference().getString(AppConstant.userId)??"")==user.id ||user.isOwner==true
+                    trailing:int.parse(chatConfigController.config.prefs.getString(constant.userId)??"")==user.id ||user.isOwner==true
                         ? const SizedBox.shrink()
                         :controller.currentUserDetails.value.isAdmin==true||controller.currentUserDetails.value.isOwner==true?
                       PopupMenuButton<String>(
@@ -144,7 +143,7 @@ controller.viewMembers();
                               //       child: Row(
                               //         children: [
                               //           Icon(user.isAdmin==false?Icons.upgrade:Icons.arrow_downward_sharp,
-                              //               color: chatThemeController.theme.primaryColorAccent),
+                              //               color: chatConfigController.theme.primaryColorAccent),
                               //           SizedBox(width: 8),
                               //           Text(user.isAdmin==false?"Promote to Admin":"Demote"),
                               //         ],

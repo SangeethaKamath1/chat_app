@@ -1,6 +1,6 @@
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -27,7 +27,7 @@ class ChatScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(chatController.name),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           InkWell(
             onTap: () async {
@@ -64,7 +64,7 @@ class ChatScreen extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Obx(() => chatController.messageId.isNotEmpty &&
-                  SharedPreference().getString(AppConstant.userId) ==
+                  chatConfigController.config.prefs.getString(constant.userId) ==
                       chatController
                           .conversations[chatController.chatIndex.value]
                           .senderUUID
@@ -115,7 +115,7 @@ class ChatScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final message = chatController.conversations[index];
                       final isMine = message.senderUsername ==
-                          SharedPreference().getString(AppConstant.username);
+                          chatConfigController.config.prefs.getString(constant.username);
 
                       return ChatMessageBubble(
                         message: message,
@@ -239,7 +239,7 @@ class ChatScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon:  Icon(Icons.send, color: chatThemeController.theme.primaryColor),
+                icon:  Icon(Icons.send, color: chatConfigController.config.primaryColor),
                 onPressed: () => _handleSend(chatController),
               ),
             ],
@@ -260,7 +260,7 @@ class ChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(width: 4, height: 40, color: chatThemeController.theme.primaryColor),
+          Container(width: 4, height: 40, color: chatConfigController.config.primaryColor),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -270,7 +270,7 @@ class ChatScreen extends StatelessWidget {
                   replyMsg.senderUsername ?? "Unknown",
                   style:  TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: chatThemeController.theme.primaryColor,
+                    color: chatConfigController.config.primaryColor,
                   ),
                 ),
                 Text(

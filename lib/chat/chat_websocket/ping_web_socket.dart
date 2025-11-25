@@ -7,7 +7,8 @@ import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
-import '../../service/shared_preference.dart';
+import '../../chat_app.dart';
+
 
 class PingWebSocketService extends FullLifeCycleController
     with FullLifeCycleMixin {
@@ -16,11 +17,11 @@ class PingWebSocketService extends FullLifeCycleController
 
   void connect() async {
   try {
-    debugPrint("fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token) ?? ""}&type=ping")}");
+    debugPrint("fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping")}");
     channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
     );
-    debugPrint("✅ ping WebSocket connection established:${SharedPreference().getString(AppConstant.userId)}");
+    debugPrint("✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(constant.userId)}");
     debugPrint("connection success:");
     channel.stream.listen((event){
         final data = jsonDecode(event);
@@ -37,12 +38,12 @@ class PingWebSocketService extends FullLifeCycleController
     onError: (e){
       debugPrint("✅ ping WebSocket connection closed onError");
         channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
     );
     });
   } catch (e) {
       channel = IOWebSocketChannel.connect(
-      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${SharedPreference().getString(AppConstant.token) ?? ""}&type=ping"),
+      Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token) ?? ""}&type=ping"),
     );
 
      debugPrint("✅ ping WebSocket connection closed on catch");
@@ -52,7 +53,7 @@ class PingWebSocketService extends FullLifeCycleController
 
 // void statusCheck(int conversationId,int userid,Item item) async{
 //   try{
-//     statusCheckChannel = WebSocketChannel.connect(Uri.parse("${ApiConstants.websocketUrl}?token=${SharedPreference().getString(AppConstant.token)??""}&type=subscribe&target=${userid.toString()}&convoid=${conversationId.toString()}"));
+//     statusCheckChannel = WebSocketChannel.connect(Uri.parse("${ApiConstants.websocketUrl}?token=${chatConfigController.config.prefs.getString(constant.token)??""}&type=subscribe&target=${userid.toString()}&convoid=${conversationId.toString()}"));
 //     print("✅ WebSocket connection established");
 //     debugPrint("connection success:");
 //     // item.status.value = 

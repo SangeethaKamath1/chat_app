@@ -7,7 +7,7 @@ import 'package:chat_app/login/login_screen.dart';
 import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/service/dio_service.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
@@ -15,6 +15,7 @@ import 'package:get/get.dart';
 import 'audio_call/service/webrtc_service.dart';
 import 'binding/global_binding.dart';
 import 'chat/chat_websocket/ping_web_socket.dart';
+import 'chat_app.dart';
 import 'constants/app_constant.dart';
 import 'login/controllers/auth_controller.dart';
 import 'recent_conversation/controller/recent_conversation_controller.dart';
@@ -25,16 +26,16 @@ void main() async{
  await DioService().init();
 
  
-  Get.lazyPut(()=>AuthController());
-  Get.lazyPut(()=>RecentConversationController());
-  Get.lazyPut(()=>CreateGroupBinding());
-  Get.lazyPut(()=>GroupDetailController());
-  Get.put(WebRTCService());
+  // Get.lazyPut(()=>AuthController());
+  // Get.lazyPut(()=>RecentConversationController());
+  // Get.lazyPut(()=>CreateGroupBinding());
+  // Get.lazyPut(()=>GroupDetailController());
+  // Get.put(WebRTCService());
   // Get.lazyPut(()=>JitsiVoiceCallController());
 //   Get.put(()=>ViewMembersController(),permanent:true);
 //  Get.lazyPut(() => AddMembersController(), fenix: true);
 
-  await SharedPreference().init();
+
   runApp(const MyApp());
 }
 
@@ -53,9 +54,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver{
      super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    final isLoggedIn = SharedPreference().getBool(AppConstant.isLoggedIn) ?? false;
+    // final isLoggedIn = chatConfigController.config.prefs.getBool(constant.isLoggedIn) ?? false;
 
-  if (isLoggedIn) {
+  // if (isLoggedIn) {
     // Register socket service on app start only if user is logged in
    ws= Get.isRegistered<PingWebSocketService>()?Get.find<PingWebSocketService>():
    Get.put(PingWebSocketService(), permanent: true);
@@ -63,7 +64,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver{
     // Optionally auto-connect
     //  ws = Get.find<ChatWebSocketService>();
     ws.connect();
-  }
+  // }
     
   }
 
@@ -76,19 +77,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver{
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-     debugPrint("SharedPreference().getBool(AppConstant.isLoggedIn)==true:${SharedPreference().getBool(AppConstant.isLoggedIn)}");
+    
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Chat App',
       initialBinding: GlobalBinding(),
       
-      initialRoute:SharedPreference().getBool(AppConstant.isLoggedIn)==true?AppRoutes.recentConversation: AppRoutes.login,
+      initialRoute:chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true?AppRoutes.recentConversation: AppRoutes.login,
       getPages: AppRoutes.pages,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: SharedPreference().getBool(AppConstant.isLoggedIn)==true?
+      home: chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true?
 const RecentConversationScreen():
 const LoginScreen()
     );
@@ -99,7 +100,7 @@ const LoginScreen()
    
   
     if (state == AppLifecycleState.resumed) {
-      if(SharedPreference().getBool(AppConstant.isLoggedIn)==true){
+      if(chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true){
       ws.connect();
       }
     }

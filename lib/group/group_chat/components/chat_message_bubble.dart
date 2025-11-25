@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 
 import '../../../constants/app_constant.dart';
 import '../../../helpers.dart';
-import '../../../service/shared_preference.dart';
+
 import '../../../src/theme/controller/chat_theme_controller.dart';
 import '../controller/group_chat_controller.dart';
 import '../group-message-info.dart';
@@ -58,7 +58,7 @@ class ChatMessageBubble extends StatelessWidget {
                   chatController.chatIndex.value = index;
                   chatController.messageId.value = message.id ?? "";
                   final Offset position = details.globalPosition;
-                  debugPrint("hellooo:${SharedPreference().getString(AppConstant.userId) ==chatController.conversations[chatController.chatIndex.value].senderUUID},${chatController.currentGroupDetails.value.isAdmin},${chatController.currentGroupDetails.value.isOwner}");
+                  debugPrint("hellooo:${chatConfigController.config.prefs.getString(constant.userId) ==chatController.conversations[chatController.chatIndex.value].senderUUID},${chatController.currentGroupDetails.value.isAdmin},${chatController.currentGroupDetails.value.isOwner}");
           
                   showReactionOverlayForGroup(
                     context: context,
@@ -73,7 +73,7 @@ class ChatMessageBubble extends StatelessWidget {
                       isMine ? Alignment.centerRight : Alignment.centerLeft,
                   child: Column(
                     children: [
-                      // Text( SharedPreference().getString(AppConstant.username)!=message.senderUsername?message.senderUsername:""),
+                      // Text( chatConfigController.config.prefs.getString(constant.username)!=message.senderUsername?message.senderUsername:""),
                       Container(
                         margin: EdgeInsets.symmetric(
                             vertical:
@@ -81,7 +81,7 @@ class ChatMessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             vertical: 10, horizontal: 14),
                         decoration: BoxDecoration(
-                          color: isMine ? chatThemeController.theme.primaryColor : Colors.grey[300],
+                          color: isMine ? chatConfigController.config.primaryColor : Colors.grey[300],
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -120,7 +120,7 @@ class ChatMessageBubble extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: isMine ? chatThemeController.theme.primaryColor : Colors.grey[200],
+        color: isMine ? chatConfigController.config.primaryColor : Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -130,7 +130,7 @@ class ChatMessageBubble extends StatelessWidget {
             message.replayTo!.senderUsername ?? "Unknown",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isMine ? chatThemeController.theme.primaryColor : Colors.black87,
+              color: isMine ? chatConfigController.config.primaryColor : Colors.black87,
               fontSize: 12,
             ),
           ),

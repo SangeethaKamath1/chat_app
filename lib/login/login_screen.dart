@@ -29,7 +29,7 @@ class LoginScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: chatThemeController.theme.primaryColor,
+                  color: chatConfigController.config.primaryColor,
                 ),
               ),
               const SizedBox(height: 10),
@@ -77,7 +77,7 @@ class LoginScreen extends StatelessWidget {
                     child:  Text(
                       "Register",
                       style: TextStyle(
-                        color: chatThemeController.theme.primaryColor,
+                        color: chatConfigController.config.primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -17,7 +17,7 @@ final CreateGroupController controller = Get.find();
     return Scaffold(
       appBar: AppBar(
         title: const Text("Create Group"),
-        backgroundColor: chatThemeController.theme.primaryColor,
+        backgroundColor: chatConfigController.config.primaryColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -119,7 +119,7 @@ final CreateGroupController controller = Get.find();
                     : "Create Group"),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: chatThemeController.theme.primaryColor,
+                  backgroundColor: chatConfigController.config.primaryColor,
                 ),
               ),
             ),

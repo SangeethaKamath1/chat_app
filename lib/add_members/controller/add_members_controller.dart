@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/model/group_member.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:chat_app/view_members/controller/view_members_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 
+import '../../chat_app.dart';
 import '../../group/group_detail/repository/group_detail_repository.dart';
 import '../../search/repository/search_repository.dart';
 
@@ -60,7 +61,7 @@ debugPrint("from create group inside the controller:$fromCreateGroup");
     for(var ele in selectedUsers){
       users.add(ele.id??0);
     }
-    await GroupDetailRepository.addMembers(SharedPreference().getInt(AppConstant.conversationId)??0, users).then((response){
+    await GroupDetailRepository.addMembers(chatConfigController.config.prefs.getInt(constant.conversationId)??0, users).then((response){
       if(response.message==ResponseMessage.memberAddSuccess){
         Fluttertoast.showToast(msg:"Member added successfully");
         tempUsers.assignAll(selectedUsers);

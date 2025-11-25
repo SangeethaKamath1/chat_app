@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/group/group_detail/repository/group_detail_repository.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../chat_app.dart';
 import '../../../model/user.dart';
 
 class GroupDetailController extends FullLifeCycleController with FullLifeCycleMixin {
@@ -26,7 +27,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
    
    nameController.text=Get.arguments['groupName'];
    descriptionController.text = Get.arguments['description'];
-    debugPrint("convo id:${SharedPreference().getInt(AppConstant.conversationId)??0}");
+    debugPrint("convo id:${chatConfigController.config.prefs.getInt(constant.conversationId)??0}");
   getGroupDetails();
     super.onInit();
   }
@@ -34,7 +35,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
   Future<void> getGroupDetails()async{
     isEditing.value=false;
     try{
-      await GroupDetailRepository.groupDetails(SharedPreference().getInt(AppConstant.conversationId)??0).then((response){
+      await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(constant.conversationId)??0).then((response){
         if(response.id!=null){                   
           currentUser.value=response.currentUser??User();
           descriptionController.text=response.description??"";
@@ -48,7 +49,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
   Future<void> saveGroupDetails()async{
     isEditing.value=false;
     try{
-      await GroupDetailRepository.groupUpdate(SharedPreference().getInt(AppConstant.conversationId)??0,nameController.value.text, descriptionController.value.text).then((response){
+      await GroupDetailRepository.groupUpdate(chatConfigController.config.prefs.getInt(constant.conversationId)??0,nameController.value.text, descriptionController.value.text).then((response){
         if(response.message==ResponseMessage.groupUpdateSuccess){
             Fluttertoast.showToast(msg:"group updated successfully");
         }
@@ -61,13 +62,13 @@ Future<void> pickGroupIcon() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       groupIcon.value = File(picked.path);
-      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), SharedPreference().getInt(AppConstant.conversationId)??0);
+      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(constant.conversationId)??0);
 
     }
   }
 Future<void> exitGroup()async{
   try{
-    await GroupDetailRepository.exitGroup(SharedPreference().getInt(AppConstant.conversationId)??0).then((response){
+    await GroupDetailRepository.exitGroup(chatConfigController.config.prefs.getInt(constant.conversationId)??0).then((response){
 debugPrint("group exited successfully");
  Get.back();
   Get.back();

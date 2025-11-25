@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/constants/app_constant.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:uuid/uuid.dart';
 
+import '../../chat_app.dart';
 import '../../model/conversation_list.dart';
 import '../../model/reaction_list_response.dart';
 import '../../routes/app_routes.dart';
@@ -145,7 +146,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
         Conversations(
           id: "${conversationId}_${uuid.v4()}",
           message: text,
-          senderUsername: SharedPreference().getString(AppConstant.username),
+          senderUsername: chatConfigController.config.prefs.getString(constant.username),
           replayTo: replyTo, // <-- custom field
         ));
         conversations.refresh();
@@ -187,7 +188,7 @@ conversations.insert(
     Conversations(
       id: messageId,
       message: text,
-      senderUsername: SharedPreference().getString(AppConstant.username),
+      senderUsername: chatConfigController.config.prefs.getString(constant.username),
       status: "SEND",
     ),
   );
@@ -236,7 +237,7 @@ conversations.insert(
               id: "${conversationId}_${uuid.v4()}",
               message: messageController.text,
               senderUsername:
-                  SharedPreference().getString(AppConstant.username),
+                  chatConfigController.config.prefs.getString(constant.username),
               status: "SEND"));
 
       conversations.refresh();

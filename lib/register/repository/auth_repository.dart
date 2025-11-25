@@ -5,11 +5,12 @@ import 'dart:convert';
 import 'package:chat_app/constants/api_constants.dart';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/service/dio_service.dart';
-import 'package:chat_app/service/shared_preference.dart';
+
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../../chat_app.dart';
 import '../../model/login_model.dart';
 import '../../model/status_model.dart';
 
@@ -47,8 +48,8 @@ class AuthRepository {
 
             final decodedToken = JWT.tryDecode(loginData.token??"");
           final userId = decodedToken?.payload["jti"];
-          SharedPreference().setString(AppConstant.userId,userId);
-          debugPrint("user id:${SharedPreference().getString(AppConstant.userId)}");
+          chatConfigController.config.prefs.setString(constant.userId,userId);
+          debugPrint("user id:${chatConfigController.config.prefs.getString(constant.userId)}");
           return loginData;
           
         }

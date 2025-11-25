@@ -7,13 +7,13 @@ import 'package:chat_app/group/group_detail/repository/group_detail_repository.d
 import 'package:chat_app/group/repository/group_chat_repository.dart';
 import 'package:chat_app/model/group_message_status.dart';
 import 'package:chat_app/service/dio_service.dart';
-import 'package:chat_app/service/shared_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../chat/helpers/encryption_helper.dart';
 import '../../../chat/repository/chat_repository.dart';
+import '../../../chat_app.dart';
 import '../../../model/conversation_list.dart';
 import '../../../model/reaction_list_response.dart';
 import '../../../model/user.dart';
@@ -119,7 +119,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   }
 
   Future<void> getCurrentGroupDetails()async{
-    await GroupDetailRepository.groupDetails(SharedPreference().getInt(AppConstant.conversationId)??0).then((response){
+    await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(constant.conversationId)??0).then((response){
 currentGroupDetails.value = response.currentUser??User();
 name.value = response.groupName??"";
 description.value=response.description??'';
@@ -149,7 +149,7 @@ description.value=response.description??'';
         Conversations(
           id: "${conversationId}_${uuid.v4()}",
           message: text,
-          senderUsername: SharedPreference().getString(AppConstant.username),
+          senderUsername: chatConfigController.config.prefs.getString(constant.username),
           replayTo: replyTo, // <-- custom field
         ));
   conversations.refresh();
@@ -183,13 +183,13 @@ description.value=response.description??'';
   final messageId = "${conversationId}_${uuid.v4()}";
    debugPrint("🔍 Sending message with ID: $messageId"); // 🟢 Add this
   debugPrint("🔍 WebSocket hashCode: ${chatWebSocket.hashCode}");
-  debugPrint("sender user name:${SharedPreference().getString(AppConstant.username)}");
+  debugPrint("sender user name:${chatConfigController.config.prefs.getString(constant.username)}");
 conversations.insert(
     0,
     Conversations(
       id: messageId,
       message: text,
-      senderUsername: SharedPreference().getString(AppConstant.username),
+      senderUsername: chatConfigController.config.prefs.getString(constant.username),
       status: "SEND",
     ),
   );
@@ -257,7 +257,7 @@ debugPrint("something went wrong:$e");
               id: "${conversationId}_${uuid.v4()}",
               message: messageController.text,
               senderUsername:
-                  SharedPreference().getString(AppConstant.username),
+                  chatConfigController.config.prefs.getString(constant.username),
               status: "SEND"));
 
       conversations.refresh();
