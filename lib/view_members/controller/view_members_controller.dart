@@ -45,32 +45,47 @@ final  Rx<User> currentUserDetails=User().obs;
     // }
   }
   Future<List<Member>> viewMembers() async {
-  if (isMembersLastPage || isLoadingMembers.value) return [];
+  if (isLoadingMembers.value) return [];
 
   try {
     isLoadingMembers.value = true;
 
-    final conversationId = chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId) ?? 0;
-    final response = await GroupDetailRepository.viewMembers(conversationId, memberPageNumber);
-currentUserDetails.value= response.groupDetails?.currentUser??User();
-    isLoadingMembers.value = false;
-
-    final items = response.members?.items ?? [];
-    if (items.isEmpty) return [];
-
     if (memberPageNumber == 0) {
       groupMembers.clear();
+      isMembersLastPage = false;
     }
 
+    if (isMembersLastPage) {
+      isLoadingMembers.value = false;
+      return [];
+    }
+
+    final conversationId =
+        chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId) ?? 0;
+
+    final response = await GroupDetailRepository.viewMembers(
+      searchController.text,
+      conversationId,
+      memberPageNumber,
+    );
+
+    currentUserDetails.value = response.groupDetails?.currentUser ?? User();
+
+    final items = response.members?.items ?? [];
+
     groupMembers.addAll(items);
-final totalPages = response.members?.totalPages?.toInt();
-    if ((totalPages!-1)== memberPageNumber) {
+
+    final totalPages = response.members?.totalPages ?? 1;
+
+    if (memberPageNumber >= totalPages - 1) {
       isMembersLastPage = true;
     } else {
       memberPageNumber++;
     }
 
+    isLoadingMembers.value = false;
     return groupMembers;
+
   } catch (e) {
     isLoadingMembers.value = false;
     debugPrint("something went wrong: $e");
@@ -90,13 +105,19 @@ Future<void> promoteToAdmin(int index,int memberId,bool isAdmin)async{
 }
 
 
-  void onSearchTextChanged(String query) {
-    if (debounce?.isActive ?? false) debounce!.cancel();
+void onSearchTextChanged(String query) {
+  if (debounce?.isActive ?? false) debounce!.cancel();
 
-    debounce = Timer(const Duration(milliseconds: 400), () {
-      //searchUsers();
-    });
-  }
+  debounce = Timer(const Duration(milliseconds: 400), () {
+
+    // IMPORTANT FIXES:
+    memberPageNumber = 0;
+    isMembersLastPage = false;
+    groupMembers.clear();
+
+    viewMembers();
+  });
+}
 
 
   Future<void> removeMember(int memberId)async{

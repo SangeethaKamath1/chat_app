@@ -72,7 +72,7 @@
 //                 children: [
 //                   const Text("Already have an account? "),
 //                   GestureDetector(
-//                     onTap: () => Get.offNamed(AppRoutes.login),
+//                     onTap: () => Get.offNamed(ChatAppRoutes.login),
 //                     child:  Text(
 //                       "Login",
 //                       style: TextStyle(

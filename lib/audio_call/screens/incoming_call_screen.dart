@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../chat/controller/chat_controller.dart';
-import '../../routes/app_routes.dart';
+import '../../routes/chat_app_routes.dart';
+
 import '../service/webrtc_service.dart';
 
 class IncomingCallScreen extends StatelessWidget {
@@ -75,7 +76,7 @@ class IncomingCallScreen extends StatelessWidget {
 
                       // ✅ FIX: Only navigate to call screen
                       // The WebRTC answer will be created when we receive the offer
-                      Get.offNamed(AppRoutes.callScreen);
+                      Get.offNamed(ChatAppRoutes.callScreen);
                     },
                   ),
                 ],

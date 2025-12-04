@@ -11,7 +11,7 @@ class CustomAlertDialogue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Get.find<ViewMembersController>();
+    // Get.find<ViewMembersController>();
     return AlertDialog(shape: 
     RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
     

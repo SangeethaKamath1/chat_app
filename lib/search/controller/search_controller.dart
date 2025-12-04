@@ -4,13 +4,13 @@ import 'package:chat_app/search/repository/search_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
-
-import '../../model/group_member.dart';
+import '../../model/search_model.dart';
+import '../../model/user.dart';
 
 
 class SearchUserController extends GetxController {
   final TextEditingController searchController = TextEditingController();
-  final RxList<Member> results = <Member>[].obs;
+  final RxList<ChatUsers> results = <ChatUsers>[].obs;
   final RxBool isLoading = false.obs;
   bool isLastPage =false;
   
@@ -35,14 +35,14 @@ Future<void> search() async {
       isLoading.value = true;
 
  SearchRepository.searchUser(searchController.text, page.toString()).then((response){
-          if(response.content?.isNotEmpty==true){
+          if(response.data?.content?.isNotEmpty==true){
             if(page ==0){
               results.clear();
-   results.addAll(response.content??[]);
+   results.addAll(response.data?.content??[]);
             }else{
-               results.assignAll(response.content??[]);
+               results.assignAll(response.data?.content??[]);
             }
-         if(response.last==true){
+         if(response.data?.last==true){
           isLastPage=true;
          }else{
           page++;

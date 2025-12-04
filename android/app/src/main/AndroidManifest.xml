@@ -2,6 +2,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.chat_app">
 
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <!-- ✅ Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -50,21 +53,21 @@
             android:value="2" />
 
         <!-- Headless Service for Incoming Calls -->
-        <service
+        <!-- <service
             android:name=".jitsi.JitsiHeadlessService"
             android:exported="false"
-            android:foregroundServiceType="microphone|phoneCall" />
+            android:foregroundServiceType="microphone|phoneCall" /> -->
 
         <!-- Jitsi Activities -->
-        <activity
+        <!-- <activity
             android:name="org.jitsi.meet.sdk.JitsiMeetActivity"
             android:launchMode="singleTask"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
-            tools:replace="android:configChanges" />
+            tools:replace="android:configChanges" /> -->
 
-     <activity
+     <!-- <activity
     android:name=".jitsi.JitsiHeadlessActivity"
     android:theme="@style/Theme.AppCompat.Light.NoActionBar"
     android:configChanges="orientation|screenSize"
@@ -78,7 +81,7 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:windowSoftInputMode="adjustResize"
-            tools:replace="android:configChanges" />
+            tools:replace="android:configChanges" /> -->
 
     </application>
 

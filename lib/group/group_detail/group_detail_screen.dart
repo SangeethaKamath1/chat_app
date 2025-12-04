@@ -1,144 +1,276 @@
 import 'package:chat_app/constants/app_constant.dart';
-
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 import '../../chat_app.dart';
-import '../../routes/app_routes.dart';
+import '../../routes/chat_app_routes.dart';
 import 'controller/group_detail_controller.dart';
 
 class GroupDetailScreen extends StatelessWidget {
-   GroupDetailScreen({super.key});
- final GroupDetailController controller = Get.find<GroupDetailController>();
+  GroupDetailScreen({super.key});
+
+  final GroupDetailController controller = Get.find<GroupDetailController>();
+
   @override
   Widget build(BuildContext context) {
-    debugPrint("user id:${chatConfigController.config.prefs.getString(chatConfigController.config.userId)}");
-   
+    final bool isDark =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
+        leading: InkWell(
+          onTap: (){
+            Get.back();
+          },
+          child: Icon(Icons.arrow_back,color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                      ),
+        )
+,
         title: const Text("Group Details"),
         centerTitle: true,
-     actions: [
-        Obx(
-        () {
-            return controller.currentUser.value.isAdmin==true || controller.currentUser.value.isOwner ==true?    Obx(() => controller.isEditing.value 
+        actions: [
+          Obx(() {
+            final isAdmin =
+                controller.currentUser.value.isAdmin == true ||
+                    controller.currentUser.value.isOwner == true;
+
+            if (!isAdmin) return const SizedBox.shrink();
+
+            return Obx(() {
+              return controller.isEditing.value
                   ? IconButton(
-                      icon: const Icon(Icons.check),
+                      icon: Icon(
+                        Icons.check,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       onPressed: () {
-                      controller.nameController.text.trim().isNotEmpty? controller.saveGroupDetails():Fluttertoast.showToast(msg: "Please Enter the group Name");
+                        if (controller.nameController.text.trim().isNotEmpty) {
+                          controller.saveGroupDetails();
+                        } else {
+                          Fluttertoast.showToast(
+                              msg: "Please enter the group name");
+                        }
                       },
                     )
                   : IconButton(
-                      icon: const Icon(Icons.edit),
+                      icon: Icon(
+                        Icons.edit,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       onPressed: () {
                         controller.isEditing.value = true;
                       },
-                    )):const SizedBox.shrink();
-          }
-        ),
-        ]
+                    );
+            });
+          })
+        ],
       ),
+
+      // Main Body
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Obx(() {
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 🟢 Group Header Section
+              // -------------------------
+              // GROUP ICON SECTION
+              // -------------------------
               Column(
                 children: [
-              GestureDetector(
-                    onTap:(){
-      controller.isEditing.value?controller.pickGroupIcon():null;
-                    } ,
-                    child:
-                    
-                      CircleAvatar(
-                      radius: 45,
-                       backgroundImage: controller.groupIcon.value != null
-                      ? FileImage(controller.groupIcon.value!)
-                      : null,
-                      
-                      child: Icon(Icons.camera_alt, size: 28, color: Colors.white70),
+                  GestureDetector(
+                    onTap: () {
+                      if (controller.isEditing.value) {
+                        controller.pickGroupIcon();
+                      }
+                    },
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Colors.grey[300],
+                         backgroundImage: controller.groupIcon.value != null
+      ? FileImage(controller.groupIcon.value!)
+      // Step 2: otherwise use network image if available
+      : (controller.groupImage.isNotEmpty
+          ? NetworkImage(controller.groupImage)
+          : null),
+
+  // Step 3: show default icon if no image exists
+  child: controller.groupIcon.value == null && controller.groupImage.isEmpty
+      ? Icon(
+          Icons.group,
+          color: chatConfigController.config.primaryColor,
+          size: 40,
+        )
+      : null,
+                        ),
+
+                        if (controller.isEditing.value)
+                          Positioned(
+                            bottom: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black.withOpacity(0.6),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          )
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Group Name (editable or read-only)
-                  Obx(
-                     () {
-                      return controller.isEditing.value
-                          ? TextField(
-                              controller: controller.nameController,
-                              textAlign: TextAlign.center,
-                              decoration:  InputDecoration(
-                                hintText: "Enter the group name",
-                                border: InputBorder.none,
-                              ),
-                              onChanged: (value){
-                                controller.nameController.text=value;
-                              },
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            )
-                          : Text(
-                           controller.nameController.text.isEmpty?"Enter the group name":controller.nameController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            );
-                    }
-                  ),
-                  const SizedBox(height: 6),
+                  // -------------------------
+                  // GROUP NAME
+                  // -------------------------
+                 Obx(() {
+  final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
-                  // Group Description (editable or read-only)
-                 Obx(
-                    () {
-                      return controller.isEditing.value
-                          ? TextField(
-                              controller: controller.descriptionController,
-                              textAlign: TextAlign.center,
-                              decoration:  InputDecoration(
-                                hintText: "Enter the description",
-                                border: InputBorder.none,
-                              ),
-                              
-                            )
-                          : Text(
-                              controller.descriptionController.text.isNotEmpty
-                                  ? controller.descriptionController.text
-                                  : "Enter the description",
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            );
-                    }
-                  ),
+  if (controller.isEditing.value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: controller.nameController,
+        textAlign: TextAlign.center,
+        autofocus: true,
+        style: TextStyle(color: isDark ?Colors.white:Colors.black),
+        decoration: InputDecoration(
+          hintText: "Enter the group name",
+          hintStyle: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    ),
+          border: InputBorder.none,
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: isDark ? Colors.white70 : Colors.black87,
+              width: 1.2,
+            ),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: chatConfigController.config.primaryColor,
+              width: 1.8,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 6),
+        ),
+      ),
+    );
+  }
+
+  // 🔹 Read Mode
+  return Text(
+    controller.nameController.text.isNotEmpty
+        ? controller.nameController.text
+        : "Enter the group name",
+   style: TextStyle(color: isDark ?Colors.white:Colors.black),
+    textAlign: TextAlign.center,
+  );
+}),
+
+
+                  const SizedBox(height: 10),
+
+                  // -------------------------
+                  // GROUP DESCRIPTION
+                  // -------------------------
+                Obx(() {
+  final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+
+  if (controller.isEditing.value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.only(top: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: controller.descriptionController,
+        textAlign: TextAlign.center,
+        maxLines: null,
+        minLines: 2,
+        
+       style: TextStyle(color: isDark ?Colors.white:Colors.black),
+        decoration: InputDecoration(
+          hintText: "Enter the description",
+          hintStyle: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    ),
+          filled: false,
+          
+          border: InputBorder.none,
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: isDark ? Colors.white70 : Colors.black87,
+              width: 1.0,
+            ),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: chatConfigController.config.primaryColor,
+              width: 1.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 🔹 View Mode
+  final text = controller.descriptionController.text.trim();
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+    child: Text(
+      text.isNotEmpty ? text : "Enter the description",
+       style: TextStyle(color: isDark ?Colors.white:Colors.black),
+      textAlign: TextAlign.center,
+    ),
+  );
+}),
+
                 ],
               ),
 
+              // -------------------------
+              // OPTIONS LIST
+              // -------------------------
               const SizedBox(height: 24),
               const Divider(),
 
-              // ⚙️ Options Section
               _OptionTile(
                 icon: Icons.people_outline,
                 title: "View Members",
                 subtitle: "See all group members",
-                onTap: () => Get.toNamed(AppRoutes.viewMembers),
+                onTap: () => Get.toNamed(ChatAppRoutes.viewMembers),
               ),
-           controller.currentUser.value.isAdmin == true||controller.currentUser.value.isOwner==true?   _OptionTile(
-                icon: Icons.person_add_alt_1_outlined,
-                title: "Add Members",
-                subtitle: "Invite people to this group",
-                onTap: () => Get.toNamed(AppRoutes.addMembers),
-              ):const SizedBox.shrink(),
+
+              // Only admin/owner can add members
+              if (controller.currentUser.value.isAdmin == true ||
+                  controller.currentUser.value.isOwner == true)
+                _OptionTile(
+                  icon: Icons.person_add_alt_1_outlined,
+                  title: "Add Members",
+                  subtitle: "Invite people to this group",
+                  onTap: () => Get.toNamed(ChatAppRoutes.chatAddMembers),
+                ),
+
               _OptionTile(
                 icon: Icons.exit_to_app_outlined,
                 title: "Exit Group",
-                subtitle: "Leave and delete this group permanently",
+                subtitle: "Leave this group",
                 iconColor: Colors.red,
                 onTap: () {
                   Get.defaultDialog(
@@ -150,22 +282,11 @@ class GroupDetailScreen extends StatelessWidget {
                     buttonColor: Colors.red,
                     onConfirm: () {
                       controller.exitGroup();
-
                       Get.back();
-                      // controller.exitGroup();
                     },
                   );
                 },
               ),
-              // _OptionTile(
-              //   icon: Icons.flag_outlined,
-              //   title: "Report Group",
-              //   subtitle: "Report inappropriate content or behavior",
-              //   iconColor: Colors.orange,
-              //   onTap: () {
-              //     // TODO: handle report
-              //   },
-              // ),
 
               const SizedBox(height: 20),
             ],
@@ -193,15 +314,34 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+
     return ListTile(
       leading: CircleAvatar(
         radius: 20,
         backgroundColor:
-            (iconColor ?? Theme.of(context).primaryColor).withOpacity(0.1),
-        child: Icon(icon, color: iconColor ?? Theme.of(context).primaryColor),
+            (iconColor ?? Colors.grey).withOpacity(0.1),
+        child: Icon(
+          icon,
+          color: iconColor ?? chatConfigController.config.primaryColor,
+        ),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          color: isDark ? Colors.white : Colors.black,
+        ),
+      ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            )
+          : null,
       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
       onTap: onTap,
     );

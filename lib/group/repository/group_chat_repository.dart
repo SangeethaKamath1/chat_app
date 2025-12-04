@@ -20,7 +20,7 @@ class GroupChatRepository {
   options: Options(headers: {"authorization":"Bearer $token"}),
   data:
 jsonEncode({
-  "userId":chatConfigController.config.prefs.getString(chatConfigController.config.userId),
+  "userId":chatConfigController.config.prefs.getInt(chatConfigController.config.id),
   "groupName":groupName,
   "description":description,
   "users":users

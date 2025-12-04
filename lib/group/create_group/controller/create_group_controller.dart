@@ -5,11 +5,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../add_members/controller/add_members_controller.dart';
+import '../../../add_members/controller/chat_add_members_controller.dart';
 import '../../../chat_app.dart';
 import '../../../constants/app_constant.dart';
 import '../../../model/create_group_response.dart';
 
+import '../../group_detail/repository/group_detail_repository.dart';
 import '../../repository/group_chat_repository.dart';
 
 class CreateGroupController extends GetxController {
@@ -19,14 +20,14 @@ class CreateGroupController extends GetxController {
   final members = <String>[].obs; // Example: you can use user IDs or usernames
   final groupIcon = Rx<File?>(null);
   final isCreating = false.obs;
-  late final   AddMembersController membersController;
+  late final   ChatAddMembersController membersController;
   late final ViewMembersController viewMembersController;
 
   final ImagePicker picker = ImagePicker();
 
   @override
   onInit(){
-    membersController = Get.isRegistered<AddMembersController>()?Get.find<AddMembersController>():Get.put(AddMembersController());
+    membersController = Get.isRegistered<ChatAddMembersController>()?Get.find<ChatAddMembersController>():Get.put(ChatAddMembersController());
     viewMembersController=Get.isRegistered<ViewMembersController>()?Get.find<ViewMembersController>():Get.put(ViewMembersController());
     
 
@@ -39,6 +40,7 @@ class CreateGroupController extends GetxController {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       groupIcon.value = File(picked.path);
+       
     }
   }
 
@@ -55,16 +57,21 @@ class CreateGroupController extends GetxController {
    Future<void> createGroup() async {
     isCreating.value =true;
     final List<int> selectedUsers = [];
-    selectedUsers.insert(0,int.parse(chatConfigController.config.prefs.getString(chatConfigController.config.userId)??""),);
+    selectedUsers.insert(0,chatConfigController.config.prefs.getInt(chatConfigController.config.id)??0,);
     for(var ele in membersController.selectedUsers){
       selectedUsers.add(ele.id??0);
     }
    try{
     await GroupChatRepository.createGroup(groupNameController.text, selectedUsers, descriptionController.value.text).then((response){
       groupDetails = response.groupDetails??GroupDetails();
-      isCreating.value =false;
+     
+      chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, groupDetails.id??0);
+      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
+         isCreating.value =false;
      Fluttertoast.showToast(msg: "Group created successfully");
      Get.back();
+      });
+
     });
    }catch(e){
     isCreating.value =false;

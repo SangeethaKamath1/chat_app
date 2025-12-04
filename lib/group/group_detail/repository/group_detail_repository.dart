@@ -47,13 +47,14 @@ throw Exception("something went wrong");
 }
 
 
-  static Future<ViewMembersDataResponse> viewMembers(int groupId,int page)async{
+  static Future<ViewMembersDataResponse> viewMembers(String searchQuery,int groupId,int page)async{
     late final Response response;
     final token =chatConfigController.config.prefs.getString(chatConfigController.config.token);
     try{
        
     response = await chatConfigController.config.dioService.get("${ApiConstants.viewMembers}$groupId",
     queryParameters: {
+      "query":searchQuery,
       "page":page,
       "size":20
     },

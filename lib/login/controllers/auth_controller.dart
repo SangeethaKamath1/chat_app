@@ -51,7 +51,7 @@
 //     isPasswordHidden.value = true;
 //     chatConfigController.config.prefs.setString(chatConfigController.config.constant.username, username);
 //     //chatConfigController.config.prefs.setString(constant.userId,response.)
-//      Get.offNamed(AppRoutes.login); 
+//      Get.offNamed(ChatAppRoutes.login); 
 //      }else{
 //       debugPrint("Something went wrong");
 //       }// reset password visibility
@@ -74,9 +74,47 @@
 //           snackPosition: SnackPosition.BOTTOM);
 // chatConfigController.config.prefs.setString(chatConfigController.config.token, response.token??"");
 // chatConfigController.config.prefs.setBool(chatConfigController.config.constant.isLoggedIn, true);
-// chatConfigController.config.prefs.setString(chatConfigController.config.constant.username,usernameController.text);
+// chatConfigController.config.prefs.setString(chatConfigC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ontroller.config.constant.username,usernameController.text);
 // Get.put(PingWebSocketService(),permanent: true).connect();
-// Get.toNamed(AppRoutes.recentConversation);
+// Get.toNamed(ChatAppRoutes.recentConversation);
 // }
 //      });
 //    }catch(e){
@@ -89,6 +127,6 @@
 //   Future<void> logout() async {
 //     chatConfigController.config.prefs.clear();
 //     loggedInUser.value = '';
-//     Get.offAllNamed(AppRoutes.login);
+//     Get.offAllNamed(ChatAppRoutes.login);
 //   }
 // }

@@ -16,7 +16,7 @@ class ViewMembersScreen extends StatelessWidget {
 controller.viewMembers();
     return Scaffold(
       appBar: AppBar(
-        title: const Text("View Members"),
+        title: const Text("View Members",style: TextStyle(color:Colors.white),),
         backgroundColor: chatConfigController.config.primaryColor,
         actions: [
           TextButton(
@@ -35,13 +35,21 @@ controller.viewMembers();
             child: TextField(
               controller: controller.searchController,
               onChanged: controller.onSearchTextChanged,
-              decoration: const InputDecoration(
-                hintText: "Search users...",
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
+              style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+              decoration:  InputDecoration(
+                    hintText: "Search username...",
+                    hintStyle: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+                    prefixIcon: Icon(Icons.search,color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12),
+                      ),
+                      borderSide: BorderSide(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    )
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                  ),
             ),
           ),
           Expanded(
@@ -54,21 +62,46 @@ controller.viewMembers();
               }
 
               return ListView.builder(
+                
                 itemCount: controller.groupMembers.length,
                 itemBuilder: (context, index) {
                   final user = controller.groupMembers[index];
                  // debugPrint("member id:${controller.groupMembers[4].id},${chatConfigController.config.prefs.getString(constant.userId)}");
 
                   return ListTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(user.username ?? ""),
+                    leading: ClipOval(
+                              child: (user.profilePicture != null &&
+                                      user.profilePicture?.isNotEmpty == true)
+                                  ? Image.network(
+                                      user.profilePicture ?? "",
+                                      fit: BoxFit.cover,
+                                      width: 36,
+                                      height: 36,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.account_circle,
+                                          size: 36,
+                                          color: Colors.grey,
+                                        );
+                                      },
+                                    ) : Icon(
+                                   
+                                          Icons.account_circle,
+                                          
+                                      size: 36,
+                                      color: Colors.grey,
+                                    ),),
+                    title: Text(user.username ?? "",style: TextStyle(
+                      color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    ),),
                     subtitle: user.isOwner == true
                         ? const Text(
                             "Group Owner",
                             style: TextStyle(color: Colors.grey),
                           )
                         : null,
-                    trailing:int.parse(chatConfigController.config.prefs.getString(chatConfigController.config.userId)??"")==user.id ||user.isOwner==true
+                    trailing:chatConfigController.config.prefs.getInt(chatConfigController.config.id)==user.id ||user.isOwner==true
                         ? const SizedBox.shrink()
                         :controller.currentUserDetails.value.isAdmin==true||controller.currentUserDetails.value.isOwner==true?
                       PopupMenuButton<String>(

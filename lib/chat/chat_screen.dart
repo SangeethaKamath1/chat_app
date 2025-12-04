@@ -10,9 +10,10 @@ import '../audio_call/screens/call_screen.dart';
 import '../audio_call/controller/jitsi_call_controller.dart';
 
 import '../audio_call/service/webrtc_service.dart';
-import '../routes/app_routes.dart';
+import '../routes/chat_app_routes.dart';
 import '../src/theme/controller/chat_theme_controller.dart';
 import 'components/chat_message_bubble.dart';
+import 'components/chat_shimmer.dart';
 import 'controller/chat_controller.dart';
 import 'helpers/encryption_helper.dart';
 
@@ -21,182 +22,271 @@ class ChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // const String roomId = "test_room_123";
-    final ChatController chatController = Get.find<ChatController>();
+    final ChatController chatController = Get.isRegistered<ChatController>()
+        ? Get.put(ChatController())
+        : Get.find<ChatController>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(chatController.name),
-        backgroundColor: chatConfigController.config.primaryColor,
-        actions: [
-          InkWell(
-            onTap: () async {
-              try {
-                // 1. Request microphone permission
-                final micStatus = await Permission.microphone.request();
-                if (micStatus.isDenied) {
-                  Get.snackbar(
-                      "Permission Required", "Allow microphone access");
-                  return;
-                }
-
-                // 2. Generate room ID
-                chatController.roomId =
-                    "${chatController.conversationId}_${chatController.uuid.v4()}";
-
-                // 3. Send call initiation message via WebSocket
-                chatController.chatWebSocket
-                    .initiatingCall(chatController.roomId);
-
-                debugPrint("Starting call with room: ${chatController.roomId}");
-
-                // 4. Navigate to call screen as CALLER
-                Get.toNamed(AppRoutes.callScreen,
-                    arguments: {'isCaller': true});
-
-                // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
-              } catch (e) {
-                debugPrint("Error starting call: $e");
-                Get.snackbar("Call Failed", "Could not start call");
-              }
-            },
-            child: const Icon(Icons.call),
+    return WillPopScope(
+      onWillPop: () async {
+        Get.back();
+        chatController.removeReactionOverlay();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white,
+                child: ClipOval(
+                  child: (chatController.icon).isNotEmpty
+                      ? Image.network(
+                          chatController.icon,
+                          fit: BoxFit.cover,
+                          width: 36,
+                          height: 36,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.account_circle,
+                              size: 36,
+                              color: Colors.grey,
+                            );
+                          },
+                        )
+                      : const Icon(
+                          Icons.account_circle,
+                          size: 36,
+                          color: Colors.grey,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(chatController.name,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700)),
+            ],
           ),
-          const SizedBox(width: 16),
-          Obx(() => chatController.messageId.isNotEmpty &&
-                  chatConfigController.config.prefs.getString(chatConfigController.config.userId) ==
-                      chatController
-                          .conversations[chatController.chatIndex.value]
-                          .senderUUID
-              ? IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    chatController.removeReactionOverlay();
-                    chatController.chatWebSocket
-                        .deleteMessage(chatController.messageId.value);
-                  },
-                )
-              : const SizedBox.shrink()),
-        ],
-      ),
+          backgroundColor: chatConfigController.config.primaryColor,
+          actions: [
+            // InkWell(
+            //   onTap: () async {
+            //     try {
+            //       // 1. Request microphone permission
+            //       final micStatus = await Permission.microphone.request();
+            //       if (micStatus.isDenied) {
+            //         Get.snackbar(
+            //             "Permission Required", "Allow microphone access");
+            //         return;
+            //       }
 
-      // MAIN BODY
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification.metrics.pixels ==
-              notification.metrics.maxScrollExtent) {
-            if (!chatController.isLoading) {
-              chatController.getConversationsList();
-            }
-            return true;
-          }
-          return false;
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 🧱 Message List
-            Expanded(
-              child: Obx(() {
-                return GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    // clear highlight when tapping outside
-                    chatController.chatIndex.value = -1;
-                    chatController.removeReactionOverlay();
-                    chatController.messageId.value = "";
-                  },
-                  child: ListView.builder(
-                    reverse: true,
-                    controller: chatController.scrollController,
-                    clipBehavior: Clip.none,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: chatController.conversations.length,
-                    itemBuilder: (context, index) {
-                      final message = chatController.conversations[index];
-                      final isMine = message.senderUsername ==
-                          chatConfigController.config.prefs.getString(chatConfigController.config.username);
+            //       // 2. Generate room ID
+            //       chatController.roomId =
+            //           "${chatController.conversationId}_${chatController.uuid.v4()}";
 
-                      return ChatMessageBubble(
-                        message: message,
-                        index: index,
-                        isMine: isMine,
-                        chatController: chatController,
-                      );
-                    },
-                  ),
-                );
-              }),
-            ),
+            //       // 3. Send call initiation message via WebSocket
+            //       chatController.chatWebSocket
+            //           .initiatingCall(chatController.roomId);
+
+            //       debugPrint("Starting call with room: ${chatController.roomId}");
+
+            //       // 4. Navigate to call screen as CALLER
+            //       Get.toNamed(ChatAppRoutes.callScreen,
+            //           arguments: {'isCaller': true});
+
+            //       // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
+            //     } catch (e) {
+            //       debugPrint("Error starting call: $e");
+            //       Get.snackbar("Call Failed", "Could not start call");
+            //     }
+            //   },
+            //   child: const Icon(Icons.call),
+            // ),
+            const SizedBox(width: 16),
             Obx(() {
-              return chatController.isTyping.value
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: Align(
-                          alignment: Alignment.topLeft,
-                          child: Text(
-                            "typing...",
-                            textAlign: TextAlign.left,
-                          )),
-                    )
-                  : const SizedBox.shrink();
-            }),
-            // 🧭 Reply Bar + Input Field
-            _buildMessageInputArea(context, chatController),
-
-            // 😀 Emoji Picker
-            Obx(() {
-              return chatController.showEmojiPicker.value
-                  ? SizedBox(
-                      height: 250,
-                      child: EmojiPicker(
-                        onEmojiSelected: (category, emoji) {
-                          if (chatController.messageId.value.isNotEmpty) {
-                            final conversation = chatController
-                                .conversations[chatController.chatIndex.value];
-
-                            if (conversation.isReacted == false) {
-                              final encryptedText =
-                                  EncryptionHelper.encryptText(emoji.emoji);
-                              chatController.chatWebSocket.sendReaction(
-                                chatController.messageId.value,
-                                encryptedText,
-                                int.parse(chatController.conversationId),
-                              );
-                              conversation.reactions?.add(emoji.emoji);
-                              conversation.isReacted = true;
-                              conversation.reaction = emoji.emoji;
-                            } else {
-                              conversation.reactions?.remove(
-                                  EncryptionHelper.decryptText(
-                                      conversation.reaction ?? ""));
-                              conversation.reactions?.add(emoji.emoji);
-                              conversation.reaction = emoji.emoji;
-                              conversation.isReacted = true;
-                              final encryptedText =
-                                  EncryptionHelper.encryptText(emoji.emoji);
-                              chatController.chatWebSocket.sendReaction(
-                                chatController.messageId.value,
-                                encryptedText,
-                                int.parse(chatController.conversationId),
-                              );
-                            }
-
-                            chatController.conversations.refresh();
-                            chatController.messageController.clear();
-                            chatController.chatIndex.value = -1;
-                            chatController.messageId.value = "";
-                            chatController.showEmojiPicker.value = false;
-                          } else {
-                            chatController.messageController.text +=
-                                emoji.emoji;
-                          }
-                        },
-                      ),
+              
+             
+              
+              return chatController.messageId.isNotEmpty &&
+                      chatConfigController.config.prefs
+                              .getInt(chatConfigController.config.id)
+                              .toString() ==
+                          chatController
+                              .conversations[chatController.chatIndex.value]
+                              .senderUUID
+                  ? IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        chatController.removeReactionOverlay();
+                        chatController.chatWebSocket
+                            .deleteMessage(chatController.messageId.value);
+                      },
                     )
                   : const SizedBox.shrink();
             }),
           ],
+        ),
+
+        // MAIN BODY
+        body: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.pixels ==
+                notification.metrics.maxScrollExtent) {
+              if (!chatController.isLoading.value) {
+                chatController.getConversationsList();
+              }
+              return true;
+            }
+            return false;
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 🧱 Message List
+              Expanded(
+                child: Obx(() {
+                  if (chatController.isLoading.value ||chatController.isCreateConversationLoading.value) {
+      return const ChatShimmer();     // 👈 show shimmer here
+    }
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      // clear highlight when tapping outside
+                      chatController.chatIndex.value = -1;
+                      chatController.removeReactionOverlay();
+                      chatController.messageId.value = "";
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 0.0),
+                      child: ListView.builder(
+                        reverse: true,
+                        controller: chatController.scrollController,
+                        clipBehavior: Clip.none,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: chatController.conversations.length,
+                        itemBuilder: (context, index) {
+                          final message = chatController.conversations[index];
+                          final isMine = message.senderUsername ==
+                              chatConfigController.config.prefs.getString(
+                                  chatConfigController.config.username);
+
+                          return ChatMessageBubble(
+                            message: message,
+                            index: index,
+                            isMine: isMine,
+                            chatController: chatController,
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              Obx(() {
+                return chatController.isTyping.value
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 16.0),
+                        child: Align(
+                            alignment: Alignment.topLeft,
+                            child: Text(
+                              "typing...",
+                              style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black),
+                              textAlign: TextAlign.left,
+                            )),
+                      )
+                    : const SizedBox.shrink();
+              }),
+              // 🧭 Reply Bar + Input Field
+              Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  color: MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark
+                      ? Colors.black
+                      : Colors.white,
+                  child: _buildMessageInputArea(context, chatController)),
+
+              // 😀 Emoji Picker
+              Obx(() {
+                return chatController.showEmojiPicker.value
+                    ? SizedBox(
+                        height: 250,
+                        child: EmojiPicker(
+                          config: Config(
+                            searchViewConfig: SearchViewConfig(
+                              customSearchView: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                            bottomActionBarConfig: BottomActionBarConfig(
+                              showBackspaceButton: false, // ❌ hide backspace
+                              showSearchViewButton:
+                                  false, // ❌ hide search button
+                            ),
+                          ),
+                          onEmojiSelected: (category, emoji) {
+                         
+                            if (chatController.messageId.value.isNotEmpty) {
+                              final conversation = chatController.conversations[
+                                  chatController.chatIndex.value];
+
+                              if (conversation.isReacted == false) {
+                                final encryptedText =
+                                    EncryptionHelper.encryptText(emoji.emoji);
+                                chatController.chatWebSocket.sendReaction(
+                                  chatController.messageId.value,
+                                  encryptedText,
+                                  int.parse(chatController.conversationId),
+                                );
+                                conversation.reactions?.add(emoji.emoji);
+                                conversation.isReacted = true;
+                                conversation.reaction = emoji.emoji;
+                              } else {
+                                conversation.reactions?.remove(
+                                    EncryptionHelper.decryptText(
+                                        conversation.reaction ?? ""));
+                                conversation.reactions?.add(emoji.emoji);
+                                conversation.reaction = emoji.emoji;
+                                conversation.isReacted = true;
+                                final encryptedText =
+                                    EncryptionHelper.encryptText(emoji.emoji);
+                                chatController.chatWebSocket.sendReaction(
+                                  chatController.messageId.value,
+                                  encryptedText,
+                                  int.parse(chatController.conversationId),
+                                );
+                              }
+
+                              chatController.conversations.refresh();
+                              chatController.messageController.clear();
+                              chatController.chatIndex.value = -1;
+                              chatController.messageId.value = "";
+                              chatController.showEmojiPicker.value = false;
+                            } else {
+                              chatController.messageController.text +=
+                                  emoji.emoji;
+                                  chatController.messageController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                  offset: chatController
+                                      .messageController.text.length),
+                            );
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+    chatController.textFieldScrollController.animateTo(
+      chatController.textFieldScrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+    );
+  });
+                            }
+                          },
+                        ),
+                      )
+                    : const SizedBox.shrink();
+              }),
+            ],
+          ),
         ),
       ),
     );
@@ -229,17 +319,65 @@ class ChatScreen extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: chatController.messageController,
-                  decoration: const InputDecoration(
+                  scrollController: chatController.textFieldScrollController,
+                  cursorColor: chatConfigController.config.primaryColor,
+                  style: TextStyle(
+                    color: MediaQuery.platformBrightnessOf(context) ==
+                            Brightness.dark
+                        ? Colors.white
+                        : Colors.black, // <-- message text color
+                    fontSize: 16,
+                  ),
+                  decoration: InputDecoration(
                     hintText: "Type a message...",
+                    hintStyle: TextStyle(
+                      color: MediaQuery.platformBrightnessOf(context) ==
+                              Brightness.dark
+                          ? Colors.white.withOpacity(0.6)
+                          : Colors.black, // <-- hint color
+                    ),
+
+                    filled: true,
+                    fillColor: MediaQuery.platformBrightnessOf(context) ==
+                            Brightness.dark
+                        ? Colors.white.withOpacity(0.15)
+                        : Colors.transparent, // <-- background color
+
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(12),
+                        ),
+                        borderSide: BorderSide(
+                          color: MediaQuery.platformBrightnessOf(context) ==
+                                  Brightness.dark
+                              ? Colors.white
+                              : Colors.black,
+                        )),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: chatConfigController
+                            .config.primaryColor, // <-- focused border
+                        width: 1.5,
+                      ),
+                    ),
+
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
                     ),
                   ),
                   onChanged: chatController.onTextChanged,
                 ),
               ),
               IconButton(
-                icon:  Icon(Icons.send, color: chatConfigController.config.primaryColor),
+                icon: Icon(Icons.send,
+                    color: chatConfigController.config.primaryColor),
                 onPressed: () => _handleSend(chatController),
               ),
             ],
@@ -260,7 +398,10 @@ class ChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(width: 4, height: 40, color: chatConfigController.config.primaryColor),
+          Container(
+              width: 4,
+              height: 40,
+              color: chatConfigController.config.primaryColor),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -268,7 +409,7 @@ class ChatScreen extends StatelessWidget {
               children: [
                 Text(
                   replyMsg.senderUsername ?? "Unknown",
-                  style:  TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: chatConfigController.config.primaryColor,
                   ),

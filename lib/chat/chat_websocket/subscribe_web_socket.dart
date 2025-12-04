@@ -11,7 +11,9 @@ import '../../model/recent_conversation.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
 class SubscribeWebSocketService extends GetxService{
- 
+  final RecentConversationController controller;
+
+ SubscribeWebSocketService(this.controller);
 final Map<int, IOWebSocketChannel> _sockets = {};
 final Map<int,String> userStatus ={};
 
@@ -42,18 +44,27 @@ void subscribe(int conversationId, int userId,Item item){
       }
           if(data["type"]=="typing"){
             item.isTyping.value =data["isTyping"]=="true"?true:false;
+             
+          }
+          if(data["type"]=="MESSAGE"){
+            item.unreadCount?.value = data['unreadCount'];
+           int index= controller.results.indexWhere((ele)=>ele.id.toString() == data['conversationId']);
+           controller.results[index].unreadCount.value=data['unreadCount'];
+           controller.results.refresh();
+          // item.unreadCount.value = 
+
           }
         
       }catch(e){
-       debugPrint("✅ subscribe WebSocket connection closed");
+       debugPrint("✅ subscribe WebSocket connection closed on catch${e}");
       }
     },
     onError: (e) {
-        debugPrint("✅ subscribe WebSocket connection closed");
+        debugPrint("✅ subscribe WebSocket connection closed on error");
 
         },
         onDone: () {
-          debugPrint("✅ subscribe WebSocket connection closed");
+          debugPrint("✅ subscribe WebSocket connection closed ondone");
           //_sockets.remove(conversationId);
         },
          cancelOnError: false,

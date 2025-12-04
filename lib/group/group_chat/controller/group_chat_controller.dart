@@ -21,6 +21,7 @@ import '../../../model/user.dart';
 class GroupChatController extends FullLifeCycleController with FullLifeCycleMixin {
   String userId = "";
   RxString name = "".obs;
+  RxString groupIcon = "".obs;
   RxString typingUser="".obs;
   RxString description = "".obs;
    RxInt chatIndex = (-1).obs;
@@ -44,6 +45,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   final ScrollController scrollController = ScrollController();
   final Uuid uuid = Uuid();
   var selectedMessageIndex = (-1).obs;
+   final ScrollController textFieldScrollController = ScrollController();
   RxList<Conversations> conversations = <Conversations>[].obs;
 
   final TextEditingController messageController = TextEditingController();
@@ -89,6 +91,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
     name.value = Get.arguments['name'].toString();
     conversationId = Get.arguments['conversationId'].toString();
     status.value = Get.arguments['status'].toString();
+    groupIcon.value =Get.arguments['icon'].toString();
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{
@@ -123,6 +126,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
 currentGroupDetails.value = response.currentUser??User();
 name.value = response.groupName??"";
 description.value=response.description??'';
+groupIcon.value = response.icon??"";
 
 
     });
@@ -189,6 +193,7 @@ conversations.insert(
     Conversations(
       id: messageId,
       message: text,
+      senderUUID: chatConfigController.config.prefs.getInt(chatConfigController.config.id).toString(),
       senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.username),
       status: "SEND",
     ),

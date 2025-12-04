@@ -9,8 +9,10 @@ class ChatConfig {
 final String token;
 final String conversationId;
 final String userId;
+final String id;
 final String username;
 final Dio dioService;
+
 
   // final Color accentColor;
   // final Color backgroundColor;
@@ -21,6 +23,7 @@ final Dio dioService;
     required this.prefs,
     required this.token,
     required this.conversationId,
+    required this.id,
     required this.userId,
     required this.username,
     required this.dioService

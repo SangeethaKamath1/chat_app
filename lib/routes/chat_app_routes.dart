@@ -11,8 +11,8 @@ import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
 import 'package:chat_app/register/register_screen.dart';
 import 'package:get/route_manager.dart';
 
-import '../add_members/add_members_screen.dart';
-import '../add_members/controller/add_members_binding.dart';
+import '../add_members/chat_add_members_screen.dart';
+import '../add_members/controller/chat_add_members_binding.dart';
 import '../group/create_group/controller/create_group_binding.dart';
 import '../group/group_detail/controller/group_detail_binding.dart';
 import '../group/group_detail/group_detail_screen.dart';
@@ -22,18 +22,19 @@ import '../search/search_screen.dart';
 import '../view_members/controller/view_members_binding.dart';
 import '../view_members/view_members.dart';
 
-class AppRoutes{
-  static const String login="/login";
-  static const String register="/register";
+class ChatAppRoutes{
+  // static const String login="/login";
+  // static const String register="/register";
   static const String  chat="/chat";
-  static const String  search="/search";
+  static const String  searchScreenInChat="/usersearch";
   static const String recentConversation = "/recentConversation";
   static const String createGroup = "/createGroup";
-  static const String addMembers = "/addMembers";
+  static const String chatAddMembers = "/chatAddMembers";
   static const String groupDetail = "/groupDetail";
   static const String viewMembers = "/viewMemebers";
   static const String groupChatScreen="/groupChatScreen";
   static const String callScreen ="/callScreen";
+  static const String incomingCallScreen ="/incomingCallScreen";
   static List<GetPage> pages=[
   // GetPage(
   //     name: login,
@@ -55,7 +56,7 @@ class AppRoutes{
       binding: ChatBinding()),
 
 
-      GetPage(name:search,
+      GetPage(name:searchScreenInChat,
       page:()=>UserSearchScreen(),
       binding: UserSearchBinding()),
 
@@ -67,9 +68,9 @@ class AppRoutes{
       page:()=>CreateGroupScreen(),
       binding: CreateGroupBinding()),
 
-       GetPage(name:addMembers,
-      page:()=>AddMembersScreen(),
-      binding: AddMembersBinding()),
+       GetPage(name:chatAddMembers,
+      page:()=>ChatAddMembersScreen(),
+      binding: ChatAddMembersBinding()),
       
       GetPage(name:groupDetail,
        page:()=>GroupDetailScreen(),

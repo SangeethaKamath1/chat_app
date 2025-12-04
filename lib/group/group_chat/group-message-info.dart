@@ -6,7 +6,7 @@ import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart'
 
 import 'package:chat_app/constants/app_constant.dart';
 
-import '../../routes/app_routes.dart';
+import '../../routes/chat_app_routes.dart';
 import '../../src/theme/controller/chat_theme_controller.dart';
 
 
@@ -28,7 +28,9 @@ class GroupMessageInfoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Message Info'),
+        title: const Text('Message Info',style: TextStyle(
+              color: Colors.white,
+            ),),
         backgroundColor: chatConfigController.config.primaryColor,
       ),
       body: Obx(() {
@@ -245,7 +247,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
           ),
           trailing: InkWell(
             onTap:(){
-                Get.toNamed(AppRoutes.chat, arguments: {
+                Get.toNamed(ChatAppRoutes.chat, arguments: {
                                 "name": user.username,
                                 // "description":user
                                 "id": user.id,

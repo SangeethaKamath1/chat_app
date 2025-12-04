@@ -73,7 +73,7 @@
 //                 children: [
 //                   const Text("Don't have an account? "),
 //                   GestureDetector(
-//                     onTap: () => Get.offNamed(AppRoutes.register),
+//                     onTap: () => Get.offNamed(ChatAppRoutes.register),
 //                     child:  Text(
 //                       "Register",
 //                       style: TextStyle(

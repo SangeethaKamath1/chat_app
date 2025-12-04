@@ -11,13 +11,14 @@ import 'package:uuid/uuid.dart';
 import '../../chat_app.dart';
 import '../../model/conversation_list.dart';
 import '../../model/reaction_list_response.dart';
-import '../../routes/app_routes.dart';
+import '../../routes/chat_app_routes.dart';
 import '../helpers/encryption_helper.dart';
 import '../repository/chat_repository.dart';
 
 class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   String userId = "";
   String name = "";
+  String icon="";
  
   String roomId="";
   final callStatus = "Connecting...".obs;
@@ -31,13 +32,16 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   String conversationId = "";
   RxBool isTyping = false.obs;
   RxString messageId = "".obs;
-  bool isLoading = false;
+  RxBool isLoading = false.obs;
+  RxBool isCreateConversationLoading=false.obs;
+
   Timer? typingTimer;
   bool isLastPage = false;
   final ScrollController scrollController = ScrollController();
   final Uuid uuid = Uuid();
   final isMuted = false.obs;
   var selectedMessageIndex = (-1).obs;
+   final ScrollController textFieldScrollController = ScrollController();
 
 
   // ✅ Add this
@@ -84,24 +88,26 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
 
     userId = Get.arguments['id'].toString();
     name = Get.arguments['name'].toString();
-    conversationId = Get.arguments['conversationId'].toString();
+    icon =Get.arguments['icon'];
+    // conversationId = Get.arguments['conversationId'].toString();
     status.value = Get.arguments['status'].toString();
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{
 
-    if (conversationId.isNotEmpty) {
+    // if (conversationId.isNotEmpty) {
     
-      chatWebSocket = Get.put(ChatWebSocketService(this));
-      chatWebSocket.connect(int.parse(conversationId));
+    //   chatWebSocket = Get.put(ChatWebSocketService(this));
+    //   chatWebSocket.connect(int.parse(conversationId));
 
       // //  chatWebSocket = Get.put(ChatWebSocketService(this));
 
       // }
-      if (conversations.isEmpty) {
-      getConversationsList();
-    }
-    }
+      createConversation();
+    //   if (conversations.isEmpty) {
+    //   getConversationsList();
+    // }
+   // }
   }
 
 
@@ -187,6 +193,7 @@ conversations.insert(
     0,
     Conversations(
       id: messageId,
+      senderUUID: chatConfigController.config.prefs.getInt(chatConfigController.config.id).toString(),
       message: text,
       senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.username),
       status: "SEND",
@@ -247,11 +254,14 @@ conversations.insert(
 
   Future<void> createConversation() async {
     try {
+      isCreateConversationLoading.value=true;
       final response =
           await ChatRepository.createConversation(userId.toString());
 
       if (response.conversationId != null) {
+        isCreateConversationLoading.value=false;
         conversationId = response.conversationId.toString();
+        chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, int.parse(conversationId));
 
         // Reinitialize ChatWebSocketService for this conversation
         if (Get.isRegistered<ChatWebSocketService>()) {
@@ -262,10 +272,13 @@ conversations.insert(
         chatWebSocket.connect(int.parse(conversationId));
         debugPrint(
             "✅ Conversation created and WebSocket connected: $conversationId");
+              getConversationsList();
       } else {
+        isCreateConversationLoading.value=false;
         debugPrint("❌ Failed to create conversation — missing conversationId");
       }
     } catch (e) {
+      isCreateConversationLoading.value=false;
       debugPrint("❌ createConversation() error: $e");
     }
   }
@@ -273,10 +286,10 @@ conversations.insert(
   Future<void> getConversationsList() async {
     debugPrint("conversation list api called:${isLastPage},${isLoading}");
     try {
-      if (isLastPage || isLoading) {
+      if (isLastPage || isLoading.value) {
         return;
       }
-      isLoading = true;
+      isLoading.value= true;
       await ChatRepository.getConversationsList(conversationId, page)
           .then((response) {
         if (response.items != null) {
@@ -326,7 +339,7 @@ conversations.insert(
             conversations.addAll(response.items ?? []);
           }
           if (response.isLastPage == true) {
-            isLastPage = true;
+            isLastPage= true;
             return;
           } else {
             page++;
@@ -336,7 +349,7 @@ conversations.insert(
     } catch (e) {
       debugPrint("something went wrong:$e");
     } finally {
-      isLoading = false;
+      isLoading.value = false;
     }
   
   }

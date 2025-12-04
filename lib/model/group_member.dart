@@ -7,12 +7,14 @@ class Member {
   String? username;
   String? password;
   int? conversationId;
+  String? profilePicture;
 
   // Accept a plain bool in constructor for convenience, convert to RxBool internally
   Member({
     this.conversationId,
     this.id,
     this.isOwner,
+    this.profilePicture,
     this.password,
     this.username,
     bool? isAdmin,
@@ -24,6 +26,7 @@ class Member {
       conversationId: json["conversationId"] as int?,
       id: json["id"] as int?,
       username: json["username"] as String?,
+      profilePicture: json['profilePicture'],
       password: json["password"] as String?,
       isOwner: json["isOwner"] as bool?,
       isAdmin: (json["isAdmin"] as bool?) ?? false,
@@ -35,6 +38,7 @@ class Member {
         "conversationId": conversationId,
         "id": id,
         "isOwner": isOwner,
+        "profilePicture":profilePicture,
         "isAdmin": isAdmin.value,
         "password": password,
         "username": username,

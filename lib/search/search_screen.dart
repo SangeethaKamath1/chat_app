@@ -1,10 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../chat/chat_websocket/ping_web_socket.dart';
-import '../constants/app_constant.dart';
-import '../routes/app_routes.dart';
+import '../routes/chat_app_routes.dart';
 
 import '../src/theme/controller/chat_theme_controller.dart';
 import 'controller/search_controller.dart';
@@ -17,11 +15,12 @@ class UserSearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     final SearchUserController searchController= Get.find<SearchUserController>();
+     final SearchUserController searchController= Get.isRegistered<SearchUserController>()?
+    Get.find<SearchUserController>():Get.put(SearchUserController());
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Search User"),
+        title:  Text("Search User",style: TextStyle(color:Colors.white,)),
         backgroundColor: chatConfigController.config.primaryColor,
       ),
       body: NotificationListener<ScrollNotification>(
@@ -40,13 +39,22 @@ class UserSearchScreen extends StatelessWidget {
               child: TextField(
                 controller: searchController.searchController,
                 onChanged: searchController.onSearchTextChanged,
-                decoration: const InputDecoration(
-                  hintText: "Search username...",
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+               decoration:  InputDecoration(
+                    hintText: "Search username...",
+                    
+                    hintStyle: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+                    prefixIcon: Icon(Icons.search,color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12),
+                      ),
+                      borderSide: BorderSide(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    )
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
                   ),
-                ),
               ),
             ),
         
@@ -67,17 +75,42 @@ class UserSearchScreen extends StatelessWidget {
                       debugPrint("user id:${user.id}");
                       }
                     return ListTile(
-                      leading:  Icon(Icons.person, color: chatConfigController.config.primaryColor),
-                      title: Text(user.username??""),
+                      leading:  
+                     ClipOval(
+                              child: (user.profilePictureUrl != null &&
+                                      user.profilePictureUrl?.isNotEmpty == true)
+                                  ? Image.network(
+                                      user.profilePictureUrl ?? "",
+                                      fit: BoxFit.cover,
+                                      width: 36,
+                                      height: 36,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.account_circle,
+                                          size: 36,
+                                          color: Colors.grey,
+                                        );
+                                      },
+                                    ) : Icon(
+                                   
+                                          Icons.account_circle,
+                                          
+                                      size: 36,
+                                      color: Colors.grey,
+                                    ),),
+                      title: Text(user.username??"",style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,)),
                       onTap: () {
-                        chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, user.conversationId??0);
+                        //chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, user.conversationId??0);
                        Get.delete<PingWebSocketService>(force: true);
    Get.put(PingWebSocketService()).connect();
-                       Get.toNamed(AppRoutes.chat,
+                       Get.toNamed(ChatAppRoutes.chat,
                        arguments: {
                         "id":user.id,
                         "name":user.username,
-                        "conversationId":user.conversationId ?? ""
+                        "conversationId":
+                       // user.conversationId ?? 
+                        ""
                        });
                       },
                     );

@@ -19,6 +19,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
   TextEditingController descriptionController = TextEditingController();
     TextEditingController nameController = TextEditingController();
  Rx<User> currentUser=User().obs;
+  String groupImage = "";
   final groupIcon = Rx<File?>(null);
    final ImagePicker picker = ImagePicker();
   @override
@@ -26,6 +27,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
     // TODO: implement onInit
    
    nameController.text=Get.arguments['groupName'];
+   groupImage = Get.arguments['icon'];
    descriptionController.text = Get.arguments['description'];
     debugPrint("convo id:${chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0}");
   getGroupDetails();
@@ -39,6 +41,7 @@ class GroupDetailController extends FullLifeCycleController with FullLifeCycleMi
         if(response.id!=null){                   
           currentUser.value=response.currentUser??User();
           descriptionController.text=response.description??"";
+          groupImage = response.icon??"";
           }
       });
     }catch(e){

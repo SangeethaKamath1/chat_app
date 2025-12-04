@@ -1,122 +1,80 @@
 
-// import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
-// import 'package:chat_app/group/create_group/controller/create_group_binding.dart';
-// import 'package:chat_app/group/group_detail/controller/group_detail_controller.dart';
-// import 'package:chat_app/login/login_screen.dart';
+import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
+import 'package:chat_app/group/create_group/controller/create_group_binding.dart';
+import 'package:chat_app/group/group_detail/controller/group_detail_controller.dart';
+import 'package:chat_app/login/login_screen.dart';
 
-// import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
-// import 'package:chat_app/routes/app_routes.dart';
-// import 'package:chat_app/service/dio_service.dart';
+import 'package:chat_app/recent_conversation/recent_conversation_screen.dart';
 
-// import 'package:flutter/material.dart';
+import 'package:chat_app/service/dio_service.dart';
 
-// import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 
-// import 'audio_call/service/webrtc_service.dart';
-// import 'binding/global_binding.dart';
-// import 'chat/chat_websocket/ping_web_socket.dart';
-// import 'chat_app.dart';
-// import 'constants/app_constant.dart';
-// import 'login/controllers/auth_controller.dart';
-// import 'recent_conversation/controller/recent_conversation_controller.dart';
+import 'package:get/get.dart';
+
+import 'audio_call/service/webrtc_service.dart';
+import 'binding/global_binding.dart';
+import 'chat/chat_websocket/ping_web_socket.dart';
+import 'chat_app.dart';
+import 'constants/app_constant.dart';
+import 'login/controllers/auth_controller.dart';
+import 'recent_conversation/controller/recent_conversation_controller.dart';
 
 
-// void main() async{
-//   WidgetsFlutterBinding.ensureInitialized();
-//  await DioService().init();
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+
 
  
-//   // Get.lazyPut(()=>AuthController());
-//   // Get.lazyPut(()=>RecentConversationController());
-//   // Get.lazyPut(()=>CreateGroupBinding());
-//   // Get.lazyPut(()=>GroupDetailController());
-//   // Get.put(WebRTCService());
-//   // Get.lazyPut(()=>JitsiVoiceCallController());
-// //   Get.put(()=>ViewMembersController(),permanent:true);
-// //  Get.lazyPut(() => AddMembersController(), fenix: true);
 
 
-//   runApp(const MyApp());
-// }
+  runApp(const MyApp());
+}
 
-// class MyApp extends StatefulWidget{
-//   const MyApp({super.key});
+class MyApp extends StatefulWidget{
+  const MyApp({super.key});
 
-//   @override
-//   State<MyApp> createState() => _MyAppState();
-// }
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
 
-// class _MyAppState extends State<MyApp> with WidgetsBindingObserver{
-//    late final ws;
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver{
+   
 
-//  @override
-//   void initState() {
-//      super.initState();
-//     WidgetsBinding.instance.addObserver(this);
+ @override
+  void initState() {
+     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
-//     // final isLoggedIn = chatConfigController.config.prefs.getBool(constant.isLoggedIn) ?? false;
+    // final isLoggedIn = chatConfigController.config.prefs.getBool(constant.isLoggedIn) ?? false;
 
-//   // if (isLoggedIn) {
-//     // Register socket service on app start only if user is logged in
-//    ws= Get.isRegistered<PingWebSocketService>()?Get.find<PingWebSocketService>():
-//    Get.put(PingWebSocketService(), permanent: true);
-
-//     // Optionally auto-connect
-//     //  ws = Get.find<ChatWebSocketService>();
-//     ws.connect();
-//   // }
+  // if (isLoggedIn) {
+    // Register socket service on app start only if user is logged in
+  
+  // }
     
-//   }
+  }
 
-//   @override
-//   void dispose() {
-//     WidgetsBinding.instance.removeObserver(this);
-//     super.dispose();
-//   }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-//   // This widget is the root of your application.
-//   @override
-//   Widget build(BuildContext context) {
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
     
-//     return GetMaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       title: 'Chat App',
-//       initialBinding: GlobalBinding(),
-      
-// //  initialRoute:chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true?AppRoutes.recentConversation: AppRoutes.login,
-//       getPages: AppRoutes.pages,
-//       theme: ThemeData(
-//         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-//         useMaterial3: true,
-//       ),
-//       home: chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true?
-// const RecentConversationScreen():
-// const LoginScreen()
-//     );
-//   }
+    return GetMaterialApp(
+     
+    );
+  }
 
-// @override
-//   void didChangeAppLifecycleState(AppLifecycleState state) {
+@override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
    
   
-//     if (state == AppLifecycleState.resumed) {
-//       if(chatConfigController.config.prefs.getBool(constant.isLoggedIn)==true){
-//       ws.connect();
-//       }
-//     }
-//     // else if(state ==AppLifecycleState.paused){
-//     //    ws.disconnect();
-//     // }
-//      else if (state == AppLifecycleState.detached) {
-//       debugPrint("ping websocket closed on detached");
-//       ws.disconnect();
-//       Get.find<ChatWebSocketService>().disconnect();
-//       Get.delete<PingWebSocketService>(force: true);
-//     }
-//   //  else if(state ==AppLifecycleState.paused){
-//   //         ws.disconnect();
-//   //        Get.find<ChatWebSocketService>().disconnect();
-//   //   }
-//   }
-// }
+    
+  }
+}
 

@@ -13,7 +13,7 @@ class RecentConversationRepository{
 static   Future<RecentConversation> recentConversationList(String searchQuery,int page)async{
   late final Response response;
   final token = chatConfigController.config.prefs.getString(chatConfigController.config.token);
-  debugPrint("token:$token");
+  debugPrint("conversation token data:$token ${ApiConstants.recentConversationList} ${chatConfigController.config.dioService}");
   try{
 response = await chatConfigController.config.dioService.get(ApiConstants.recentConversationList,queryParameters: {
   "searchQuery":searchQuery,

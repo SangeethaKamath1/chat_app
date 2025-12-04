@@ -1,6 +1,7 @@
 class User {
   int? id;
   String? username;
+  String? profilePicture;
 bool? isOwner;
  DateTime? updatedAt;
   bool? isAdmin;
@@ -10,6 +11,7 @@ bool? isOwner;
     id = json['id'];
     username = json['username'];
      isOwner = json['isOwner'];
+     profilePicture = json['profilePicture'];
     isAdmin = json['isAdmin'];
      updatedAt = json['updatedAt'];
   }
@@ -19,6 +21,7 @@ bool? isOwner;
     data['id'] = id;
     data['username'] = username;
     data['isOwner'] = isOwner;
+    data['profilePicture']=profilePicture;
     data['isAdmin'] = isAdmin;
     data['updatedAt'] = updatedAt;
     return data;
