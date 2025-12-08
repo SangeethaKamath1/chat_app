@@ -85,12 +85,14 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   @override
   void onInit() {
     super.onInit();
-
+ debugPrint("arguments:${Get.arguments['id'].toString()},${Get.arguments['name'].toString()},${Get.arguments['icon']},${Get.arguments['status'].toString()}");
     userId = Get.arguments['id'].toString();
     name = Get.arguments['name'].toString();
-    icon =Get.arguments['icon'];
+    icon =Get.arguments['icon'].toString();
     // conversationId = Get.arguments['conversationId'].toString();
+   
     status.value = Get.arguments['status'].toString();
+
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{
