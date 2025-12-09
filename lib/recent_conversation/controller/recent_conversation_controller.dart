@@ -57,7 +57,7 @@ late   SubscribeWebSocketService conversationService ;
   }
 
   try {
-    isLoading.value = true;
+   page ==0? isLoading.value = true:null;
 
     final response = await RecentConversationRepository.recentConversationList(
         searchController.text, page);  // ✅ Use await instead of .then()
