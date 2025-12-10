@@ -315,7 +315,7 @@ class GroupChatScreen extends StatelessWidget {
               Expanded(
                 child: TextField(
     controller: chatController.messageController,
-    focusNode: chatController.messageFocusNode,
+    
 
     cursorColor: chatConfigController.config.primaryColor,
 
@@ -359,7 +359,7 @@ class GroupChatScreen extends StatelessWidget {
       ),
     ),
 
-    //onChanged: chatController.onTextChanged,
+    onChanged: chatController.onTextChanged,
   ),
               ),
               IconButton(
