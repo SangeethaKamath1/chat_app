@@ -22,9 +22,8 @@ class ChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ChatController chatController = Get.isRegistered<ChatController>()
-        ? Get.put(ChatController())
-        : Get.find<ChatController>();
+    final ChatController chatController = 
+        Get.find<ChatController>();
 
     return WillPopScope(
       onWillPop: () async {
