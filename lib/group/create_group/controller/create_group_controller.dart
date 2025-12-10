@@ -62,15 +62,20 @@ class CreateGroupController extends GetxController {
       selectedUsers.add(ele.id??0);
     }
    try{
+    
     await GroupChatRepository.createGroup(groupNameController.text, selectedUsers, descriptionController.value.text).then((response){
       groupDetails = response.groupDetails??GroupDetails();
      
       chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, groupDetails.id??0);
-      GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
+     groupIcon.value!=null? GroupDetailRepository.setGroupIcon(groupIcon.value??File(""), chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
          isCreating.value =false;
-     Fluttertoast.showToast(msg: "Group created successfully");
+      Fluttertoast.showToast(msg: "Group created successfully");
      Get.back();
-      });
+      }):null;
+      if( groupIcon.value==null){isCreating.value =false;
+      Fluttertoast.showToast(msg: "Group created successfully");
+     Get.back();
+      }
 
     });
    }catch(e){

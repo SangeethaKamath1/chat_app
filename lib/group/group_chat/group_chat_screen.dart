@@ -33,7 +33,7 @@ class GroupChatScreen extends StatelessWidget {
               height: 36,
               errorBuilder: (context, error, stackTrace) {
                 return const Icon(
-                  Icons.account_circle,
+                  Icons.group,
                   size: 36,
                   color: Colors.grey,
                 );
@@ -315,6 +315,8 @@ class GroupChatScreen extends StatelessWidget {
               Expanded(
                 child: TextField(
     controller: chatController.messageController,
+    
+
     cursorColor: chatConfigController.config.primaryColor,
 
     style:  TextStyle(
