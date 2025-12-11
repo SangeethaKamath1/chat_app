@@ -13,6 +13,7 @@ class RecentConversationController extends FullLifeCycleController
     with FullLifeCycleMixin {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode(); 
+  final RxBool isFetching =false.obs;
   final RxBool isRefreshing =false.obs;
   final RxList<Item> results = <Item>[].obs;
   final List<LastMessage> lastMessageList = <LastMessage>[].obs;
@@ -57,7 +58,7 @@ late   SubscribeWebSocketService conversationService ;
   }
 
   try {
-   page ==0? isLoading.value = true:null;
+page ==0? isLoading.value = true:isFetching.value=true;
 
     final response = await RecentConversationRepository.recentConversationList(
         searchController.text, page);  // ✅ Use await instead of .then()
@@ -111,7 +112,8 @@ late   SubscribeWebSocketService conversationService ;
     results.clear();
     debugPrint("❌ Search error: ${e.message}");
   } finally {
-    isLoading.value = false; 
+    isLoading.value = false;
+    isFetching.value=false;
     isRefreshing.value=false; // ✅ This now runs after response is received
   }
 }
