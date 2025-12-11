@@ -113,7 +113,7 @@ class RecentConversationScreen extends StatelessWidget {
                   onNotification: (notification) {
                     if (notification.metrics.pixels ==
                         notification.metrics.maxScrollExtent) {
-                      !conversationController.isLoading.value
+                      !conversationController.isLoading.value &&!conversationController.isFetching.value
                           ? conversationController.search()
                           : null;
                     }

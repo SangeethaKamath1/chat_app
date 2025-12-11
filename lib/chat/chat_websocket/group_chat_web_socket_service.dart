@@ -43,12 +43,12 @@ class GroupChatWebSocketService extends GetxService{
          final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
          var replyTo;
 if(data["replyTo"]!=null){
-   replyTo=Conversations(id:data["replyTo"]??"",senderUUID: data["receiver"]??"",senderUsername: data["senderUsername"]??"",message: data["reply"]??"");
+   replyTo=Conversations(id:data["replyTo"]??"",senderUUID: data["receiver"]??"",senderUsername: data["receiverUsername"]??"",message: data["reply"]??"");
 }else{
   replyTo=null;
 }
 
-          chatController.conversations.insert(0, Conversations(id:data["messageId"]??"",senderUUID: data["sender"]??"",message: decryptedMsg,replayTo:replyTo ));
+          chatController.conversations.insert(0, Conversations(id:data["messageId"]??"", senderUsername: data['senderUsername']??"",senderUUID: data["sender"]??"",message: decryptedMsg,replayTo:replyTo ));
       }
       else if(data["type"]=="typing"){
         chatController.isTyping.value=data["isTyping"] == "true"?true:false;

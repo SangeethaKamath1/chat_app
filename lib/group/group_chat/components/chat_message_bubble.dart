@@ -158,10 +158,11 @@ class ChatMessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            message.replayTo!.senderUsername == chatConfigController.config.prefs.getString(chatConfigController.config.username)?"You":
             message.replayTo!.senderUsername ?? "Unknown",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isMine ? Colors.white : Colors.black87,
+              color: isMine ? Colors.white : isDark?Colors.white: Colors.black87,
               fontSize: 12,
             ),
             maxLines: 1,
@@ -173,7 +174,7 @@ class ChatMessageBubble extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              color: isMine ? Colors.white70 : Colors.black54,
+              color: isMine ? Colors.white70 : isDark?Colors.white70:Colors.black54,
             ),
           ),
         ],

@@ -156,18 +156,18 @@ controller.viewMembers();
               color: Colors.blueAccent,
             ),
             const SizedBox(width: 8),
-            Text(user.isAdmin == false ? "Promote to Admin" : "Demote"),
+            Text(user.isAdmin == false ? "Promote to Admin" : "Demote",style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,)),
           ],
         ),
       ),
-                                  const PopupMenuItem(
+                                   PopupMenuItem(
                                     value: 'remove',
                                     child: Row(
                                       children: [
                                         Icon(Icons.person_remove,
                                             color: Colors.redAccent),
                                         SizedBox(width: 8),
-                                        Text("Remove"),
+                                        Text("Remove",style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,)),
                                       ],
                                     ),
                                   ),
