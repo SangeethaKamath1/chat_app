@@ -139,8 +139,8 @@ class GroupChatScreen extends StatelessWidget {
           onNotification: (notification) {
             if (notification.metrics.pixels ==
                 notification.metrics.maxScrollExtent) {
-              if (!chatController.isLoading) {
-                //chatController.getConversationsList();
+              if (!chatController.isLoading.value &&!chatController.isFetching.value ) {
+                chatController.getConversationsList();
               }
               return true;
             }

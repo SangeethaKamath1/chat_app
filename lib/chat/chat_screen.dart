@@ -80,21 +80,21 @@ class ChatScreen extends StatelessWidget {
             //             "Permission Required", "Allow microphone access");
             //         return;
             //       }
-
+      
             //       // 2. Generate room ID
             //       chatController.roomId =
             //           "${chatController.conversationId}_${chatController.uuid.v4()}";
-
+      
             //       // 3. Send call initiation message via WebSocket
             //       chatController.chatWebSocket
             //           .initiatingCall(chatController.roomId);
-
+      
             //       debugPrint("Starting call with room: ${chatController.roomId}");
-
+      
             //       // 4. Navigate to call screen as CALLER
             //       Get.toNamed(ChatAppRoutes.callScreen,
             //           arguments: {'isCaller': true});
-
+      
             //       // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
             //     } catch (e) {
             //       debugPrint("Error starting call: $e");
@@ -127,13 +127,13 @@ class ChatScreen extends StatelessWidget {
             }),
           ],
         ),
-
+      
         // MAIN BODY
         body: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
             if (notification.metrics.pixels ==
                 notification.metrics.maxScrollExtent) {
-              if (!chatController.isLoading.value) {
+              if (!chatController.isLoading.value && !chatController.isFetching.value) {
                 chatController.getConversationsList();
               }
               return true;
@@ -148,8 +148,8 @@ class ChatScreen extends StatelessWidget {
                 child: Obx(() {
                   if (chatController.isLoading.value ||chatController.isCreateConversationLoading.value) {
       return const ChatShimmer();     // 👈 show shimmer here
-    }
-
+          }
+      
                   return GestureDetector(
                     behavior: HitTestBehavior.translucent,
                     onTap: () {
@@ -171,7 +171,7 @@ class ChatScreen extends StatelessWidget {
                           final isMine = message.senderUsername ==
                               chatConfigController.config.prefs.getString(
                                   chatConfigController.config.username);
-
+      
                           return ChatMessageBubble(
                             message: message,
                             index: index,
@@ -206,7 +206,7 @@ class ChatScreen extends StatelessWidget {
                       ? Colors.black
                       : Colors.white,
                   child: _buildMessageInputArea(context, chatController)),
-
+      
               // 😀 Emoji Picker
               Obx(() {
                 return chatController.showEmojiPicker.value
@@ -229,7 +229,7 @@ class ChatScreen extends StatelessWidget {
                             if (chatController.messageId.value.isNotEmpty) {
                               final conversation = chatController.conversations[
                                   chatController.chatIndex.value];
-
+      
                               if (conversation.isReacted == false) {
                                 final encryptedText =
                                     EncryptionHelper.encryptText(emoji.emoji);
@@ -256,7 +256,7 @@ class ChatScreen extends StatelessWidget {
                                   int.parse(chatController.conversationId),
                                 );
                               }
-
+      
                               chatController.conversations.refresh();
                               chatController.messageController.clear();
                               chatController.chatIndex.value = -1;
@@ -272,12 +272,12 @@ class ChatScreen extends StatelessWidget {
                                       .messageController.text.length),
                             );
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-    chatController.textFieldScrollController.animateTo(
+          chatController.textFieldScrollController.animateTo(
       chatController.textFieldScrollController.position.maxScrollExtent,
       duration: const Duration(milliseconds: 100),
       curve: Curves.easeOut,
-    );
-  });
+          );
+        });
                             }
                           },
                         ),

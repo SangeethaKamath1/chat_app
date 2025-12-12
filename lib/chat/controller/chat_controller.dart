@@ -24,6 +24,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   final callStatus = "Connecting...".obs;
   final RxInt chatIndex = (-1).obs;
   RxString status = "".obs;
+  final RxBool isFetching =false.obs;
   int page = 0;
   int reactionsPageNumber = 0;
   RxList<Reaction> reactions = <Reaction>[].obs;
@@ -291,7 +292,7 @@ conversations.insert(
       if (isLastPage || isLoading.value) {
         return;
       }
-      isLoading.value= true;
+   page==0?  isLoading.value= true:isFetching.value=true;
       await ChatRepository.getConversationsList(conversationId, page)
           .then((response) {
         if (response.items != null) {

@@ -25,6 +25,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   RxString typingUser="".obs;
   RxString description = "".obs;
    RxInt chatIndex = (-1).obs;
+   final RxBool isFetching = false.obs;
   RxString status = "".obs;
   Rx<User> currentGroupDetails= User().obs;
   int page = 0;
@@ -39,7 +40,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   String conversationId = "";
   RxBool isTyping = false.obs;
   RxString messageId = "".obs;
-  bool isLoading = false;
+  final RxBool isLoading = false.obs;
   Timer? typingTimer;
   bool isLastPage = false;
   final ScrollController scrollController = ScrollController();
@@ -298,10 +299,10 @@ debugPrint("something went wrong:$e");
   Future<void> getConversationsList() async {
     debugPrint("conversation list api called:${isLastPage},${isLoading}");
     try {
-      if (isLastPage || isLoading) {
+      if (isLastPage || isLoading.value) {
         return;
       }
-      isLoading = true;
+   page ==0 ?   isLoading.value= true:isFetching.value=false;
       await ChatRepository.getConversationsList(conversationId, page)
           .then((response) {
         if (response.items != null) {
@@ -363,7 +364,7 @@ debugPrint("something went wrong:$e");
     } catch (e) {
       debugPrint("something went wrong:$e");
     } finally {
-      isLoading = false;
+      isLoading.value = false;
     }
   }
 
