@@ -63,7 +63,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
 
   // Messages list
 // final RxList<String> messages = <String>[].obs;
-  late final ChatWebSocketService chatWebSocket;
+    ChatWebSocketService? chatWebSocket;
   var showEmojiPicker = false.obs; // <-- reactive state
 
   OverlayEntry? reactionOverlayEntry;
@@ -85,14 +85,14 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
 
   @override
   void onInit() {
-    super.onInit();
- debugPrint("arguments:${Get.arguments['id'].toString()},${Get.arguments['name'].toString()},${Get.arguments['icon']},${Get.arguments['status'].toString()}");
+  debugPrint("onint called");
+if(Get.arguments!=null){
     userId = Get.arguments['id'].toString();
     name = Get.arguments['name'].toString();
     icon =Get.arguments['icon'].toString();
     // conversationId = Get.arguments['conversationId'].toString();
    
-    status.value = Get.arguments['status'].toString();
+    status.value = Get.arguments['status'].toString();}
 
     //  if(conversationId.isEmpty){
     //   createConversation();
@@ -111,6 +111,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
     //   getConversationsList();
     // }
    // }
+     super.onInit();
   }
 
 
@@ -127,10 +128,10 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
 
   void onTextChanged(String value) {
     if (value.isNotEmpty) {
-   chatWebSocket.channel!=null?  chatWebSocket.onChanged(true):null;
+   chatWebSocket!.channel!=null?  chatWebSocket!.onChanged(true):null;
       typingTimer?.cancel();
       typingTimer = Timer(const Duration(seconds: 2), () {
-     chatWebSocket.channel!=null?  chatWebSocket.onChanged(false):null;
+     chatWebSocket!.channel!=null?  chatWebSocket!.onChanged(false):null;
       });
     }
   }
@@ -142,7 +143,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
     final replyTo = replyMessage.value;
     final encryptedText = EncryptionHelper.encryptText(text);
     // Add your API/WebSocket call here with replyId
-    chatWebSocket.sendMessageWithReply(
+    chatWebSocket!.sendMessageWithReply(
      replyTo: replyTo?.id??"",
      receiver:replyTo?.senderUUID??"",
      receiverUsername: replyTo?.senderUsername??"",
@@ -212,7 +213,7 @@ conversations.insert(
   
 
   // Send message over WebSocket
-  chatWebSocket.sendMessage(messageId, encryptedText, int.parse(conversationId));
+  chatWebSocket!.sendMessage(messageId, encryptedText, int.parse(conversationId));
 
   // Locally add to UI
   
@@ -239,7 +240,7 @@ conversations.insert(
     if (messageController.text.trim().isNotEmpty) {
       // messages.add(messageController.text.trim());
         final encryptedText = EncryptionHelper.encryptText(messageController.text);
-      chatWebSocket.sendMessage("${conversationId}_${uuid.v4()}",
+      chatWebSocket!.sendMessage("${conversationId}_${uuid.v4()}",
           encryptedText, int.parse(conversationId));
       conversations.insert(
           0,
@@ -272,7 +273,7 @@ conversations.insert(
         }
         chatWebSocket = Get.put(ChatWebSocketService(this));
 
-        chatWebSocket.connect(int.parse(conversationId));
+        chatWebSocket!.connect(int.parse(conversationId));
         debugPrint(
             "✅ Conversation created and WebSocket connected: $conversationId");
               getConversationsList();
@@ -420,10 +421,10 @@ conversations.insert(
 
   @override
   onClose() {
-    chatWebSocket.disconnect();
+    // chatWebSocket!.disconnect();
     
    Get.delete<ChatWebSocketService>(force: true);
-    Get.delete<ChatController>();
+    // Get.delete<ChatController>();
     debugPrint("chat WebSocket connection closed onClose");
     //Get.delete<ChatController>();
     super.onClose();

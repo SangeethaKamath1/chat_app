@@ -74,7 +74,7 @@ class _ReactionListBottomSheetState extends State<ReactionListBottomSheet>
                           onTap: (){
                              int chatIndex = widget.chatController.chatIndex.value;
                             if(reaction.user?.username==chatConfigController.config.prefs.getString(chatConfigController.config.username)){
-                               widget.chatController.chatWebSocket.sendReaction(
+                               widget.chatController.chatWebSocket!.sendReaction(
                     widget.messageId,
                     "",
                     int.parse(widget.chatController.conversationId),

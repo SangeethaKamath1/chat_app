@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:chat_app/constants/api_constants.dart';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
+import '../../audio_call/screens/incoming_call_screen.dart';
 import '../../chat_app.dart';
 
 
@@ -23,10 +26,29 @@ class PingWebSocketService extends FullLifeCycleController
     );
     debugPrint("✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(chatConfigController.config.userId)}");
     debugPrint("connection success:");
-    channel.stream.listen((event){
+    channel.stream.listen((event) async {
         final data = jsonDecode(event);
+         log("ping is connected:${data}");
       if(data["connectionStatus"] =="CONNECTED" ){
-        debugPrint("ping is connected");
+        debugPrint("ping is connected:${data}");
+
+      }else if(data["type"]=="call"){
+         final ChatController chatController = Get.isRegistered<ChatController>()?
+        Get.find<ChatController>():Get.put(ChatController());
+        chatController.userId = data['sender'];
+        debugPrint("user id ping socket:${chatController.userId}");
+        chatController.createConversation();
+        final roomId = data["callID"];
+      final callerName = data["senderUsername"] ?? "Unknown";
+       final offerData = data["offer"];
+      debugPrint("📞 Incoming call from $callerName - Room: $roomId");
+    final webRTCService = Get.find<WebRTCService>();
+    await webRTCService.handleOffer(RTCSessionDescription(offerData['sdp'], offerData['type']));
+    webRTCService.speakerphoneService.stopRingtone();
+      Get.to(() => IncomingCallScreen(
+        roomId: roomId,
+        callerName: callerName,
+      ));
 
       }
 
@@ -36,7 +58,7 @@ class PingWebSocketService extends FullLifeCycleController
   
     },
     onError: (e){
-      debugPrint("✅ ping WebSocket connection closed onError");
+      debugPrint("✅ ping WebSocket connection closed onError:$e");
         channel = IOWebSocketChannel.connect(
       Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}&type=ping"),
     );
@@ -49,6 +71,18 @@ class PingWebSocketService extends FullLifeCycleController
      debugPrint("✅ ping WebSocket connection closed on catch");
 
   }
+}
+
+void sendFcmToken(String token){
+  debugPrint("send fcm token called");
+  final payload={
+    
+"type" : "fcmToken",
+"fcmToken" : token
+
+  };
+    channel?.sink.add(jsonEncode(payload));
+debugPrint("fcm token payload :${payload}");
 }
 
 // void statusCheck(int conversationId,int userid,Item item) async{

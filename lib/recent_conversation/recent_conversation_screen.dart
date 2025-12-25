@@ -14,8 +14,9 @@ class RecentConversationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RecentConversationController conversationController = Get.find<
-        RecentConversationController>(); // final RecentConversationController conversationController =
+    final RecentConversationController conversationController = Get.isRegistered<RecentConversationController>()?
+    Get.find<
+        RecentConversationController>():Get.put(RecentConversationController()); // final RecentConversationController conversationController =
     //     Get.find<RecentConversationController>();
 
     return SafeArea(
@@ -125,8 +126,9 @@ class RecentConversationScreen extends StatelessWidget {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (conversationController.results.isEmpty) {
-                      return const Center(
-                          child: Text("No conevrsations found"));
+                      return  Center(
+                          child: Text("No conevrsations found",style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    )));
                     }
                     return ListView.builder(
                       itemCount: conversationController.results.length,
@@ -297,11 +299,11 @@ class RecentConversationScreen extends StatelessWidget {
                                             )
                                       : const SizedBox.shrink()),
                           onTap: () {
+                         
                             chatConfigController.config.prefs.setInt(
                                 chatConfigController.config.conversationId,
                                 user.id ?? 0);
-                            Get.delete<PingWebSocketService>(force: true);
-                            Get.put(PingWebSocketService()).connect();
+                           
                             user.type == "PRIVATE_CHAT"
                                 ? Get.toNamed(ChatAppRoutes.chat, arguments: {
                                     "name": user.peerUser?.username,
@@ -333,6 +335,8 @@ class RecentConversationScreen extends StatelessWidget {
                                     Get.put(SubscribeWebSocketService(conversationController));
                                     conversationController.search();
                                   });
+                                   Get.delete<PingWebSocketService>(force: true);
+                            Get.put(PingWebSocketService()).connect();
                           },
                         );
                       },

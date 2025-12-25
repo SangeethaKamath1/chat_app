@@ -20,7 +20,7 @@ class ChatWebSocketService extends GetxService{
   final ChatController chatController;
    ChatWebSocketService(this.chatController);
 
-  
+  final webRTCService = Get.find<WebRTCService>();
    @override
   void onInit() {
     // TODO: implement onInit
@@ -57,24 +57,35 @@ class ChatWebSocketService extends GetxService{
         replayTo: replyTo
       ));
     }
-    else if (data["type"] == "call") {
+    // else if (data["type"] == "call") {
+    //   final roomId = data["callID"];
+    //   final callerName = data["senderUsername"] ?? "Unknown";
+    //   debugPrint("📞 Incoming call from $callerName - Room: $roomId");
+       
+    //    webRTCService.speakerphoneService.stopRingtone();
+    //   Get.to(() => IncomingCallScreen(
+    //     roomId: roomId,
+    //     callerName: callerName,
+    //   ));
+    // }
+    else if(data["type"] == "call") {
+      // ✅ Handle WebRTC offer from caller
+      final offerData = data["offer"];
       final roomId = data["callID"];
-      final callerName = data["senderUsername"] ?? "Unknown";
+       await webRTCService.handleOffer(RTCSessionDescription(offerData['sdp'], offerData['type']));
+      debugPrint("📥 Received WebRTC offer for room: $roomId");
+       final callerName = data["senderUsername"] ?? "Unknown";
       debugPrint("📞 Incoming call from $callerName - Room: $roomId");
-      
+     
+       
+       webRTCService.speakerphoneService.stopRingtone();
       Get.to(() => IncomingCallScreen(
         roomId: roomId,
         callerName: callerName,
       ));
-    }
-    else if(data["type"] == "offer") {
-      // ✅ Handle WebRTC offer from caller
-      final offerData = data["offer"];
-      final roomId = data["callID"];
-      debugPrint("📥 Received WebRTC offer for room: $roomId");
       
-      final webRTCService = Get.find<WebRTCService>();
-      await webRTCService.handleOffer(RTCSessionDescription(offerData['sdp'], offerData['type']));
+     
+      
     }
     else if(data["type"] == "answer") {
       // ✅ Handle WebRTC answer from callee  
@@ -82,7 +93,7 @@ class ChatWebSocketService extends GetxService{
       final roomId = data["callID"];
       debugPrint("📥 Received WebRTC answer for room: $roomId");
       
-      final webRTCService = Get.find<WebRTCService>();
+    
       await webRTCService.handleAnswer(RTCSessionDescription(answerData['sdp'], answerData['type']));
     }
     else if(data["type"] == "candidate") {
@@ -91,7 +102,7 @@ class ChatWebSocketService extends GetxService{
       final roomId = data["callID"];
       debugPrint("❄️ Received ICE candidate for room: $roomId");
       
-      final webRTCService = Get.find<WebRTCService>();
+    
       await webRTCService.addIceCandidate(RTCIceCandidate(
         candidateData['candidate'],
         candidateData['sdpMid'] ?? '0',
@@ -101,23 +112,25 @@ class ChatWebSocketService extends GetxService{
       ));
     }
     else if(data["type"] == "call_ended") {
+      
       final roomId = data["callID"];
       debugPrint("📞 Call ended - Room: $roomId");
       
-      final webRTCService = Get.find<WebRTCService>();
+      
+       webRTCService.speakerphoneService.stopRingtone();
       await webRTCService.endCall();
       
       // Navigate back only if we're on a call screen
-      if (Get.currentRoute.contains('call')) {
+     // if (Get.currentRoute.contains('call')) {
         Get.back();
-      }
+     // }
     }
     else if(data["type"] == "call_rejected") {
       final roomId = data["callID"];
       final callerName = data["senderUsername"] ?? "Unknown";
       debugPrint("📞 Call rejected by $callerName - Room: $roomId");
       
-      final webRTCService = Get.find<WebRTCService>();
+     webRTCService.speakerphoneService.stopRingtone();
       await webRTCService.endCall();
       
       // Navigate back only if we're on a call screen
@@ -130,6 +143,7 @@ class ChatWebSocketService extends GetxService{
       final roomId = data["callID"];
       final username = data["senderUsername"] ?? "Unknown";
       debugPrint("✅ Call accepted by $username - Room: $roomId");
+      webRTCService.speakerphoneService.stopRingtone();
       
       // Update UI status if needed
       chatController.callStatus.value = "Call accepted, connecting...";
@@ -143,6 +157,9 @@ class ChatWebSocketService extends GetxService{
       }else{
       chatController.updateMessageStatusToSeen();
       }
+      chatController.conversations.refresh();
+    }else if(data['type']=="delete"){
+      chatController.conversations.removeWhere((ele)=>ele.id == data['messageId']);
       chatController.conversations.refresh();
     }
     else if(data["status"] == "DELIVERED") {
@@ -192,15 +209,18 @@ class ChatWebSocketService extends GetxService{
       }
     }
 
-void  initiatingCall(String roomId){
-    final payload={
-      "type":"call",
-      "callID":roomId
+// void  initiatingCall(String roomId){
+//   debugPrint("fcm token while initiating a call:${chatConfigController.config.prefs.getString(chatConfigController.config.fcmToken)??""}");
+//     final payload={
+//       "type":"call",
+//       "offer":{"sdp": "", "type": "",},
+//       "callID":roomId,
+     
 
-    };
-    channel?.sink.add(jsonEncode(payload));
-     print("initiating call : $payload");
-  }
+//     };
+//     channel?.sink.add(jsonEncode(payload));
+//      print("initiating call : $payload");
+//   }
 
   void  callAccepted(String roomId){
     final payload={
@@ -209,7 +229,7 @@ void  initiatingCall(String roomId){
 
     };
     channel?.sink.add(jsonEncode(payload));
-     print("initiating call : $payload");
+     print("accepting a  call : $payload");
   }
   void callRejected(String roomId){
     final payload={

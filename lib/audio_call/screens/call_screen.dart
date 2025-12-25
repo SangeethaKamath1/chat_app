@@ -1,9 +1,11 @@
+import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 
 import '../../chat/controller/chat_controller.dart';
 import '../service/webrtc_service.dart';
+import 'package:amu_alumni/amu_alumni.dart';
 
 class VoiceCallScreen extends StatefulWidget {
   const VoiceCallScreen({super.key});
@@ -16,6 +18,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
   final ChatController chatController = Get.find<ChatController>();
   final WebRTCService webRTCService = Get.find<WebRTCService>();
   bool _initialized = false;
+  bool fromNotification=false;
   late bool _isCaller;
 
   @override
@@ -25,8 +28,10 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     // Determine if we're caller or callee from route arguments
     final arguments = Get.arguments ?? {};
     _isCaller = arguments['isCaller'] ?? false;
+     fromNotification = Get.arguments['fromNotification']??false;
     
     _initializeCall();
+  
   }
 
   Future<void> _initializeCall() async {
@@ -34,7 +39,20 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     
     if (_isCaller) {
       debugPrint("📞 CALLER: Creating offer...");
+//       await Helper.setAndroidAudioConfiguration(
+//   AndroidAudioConfiguration(
+//     manageAudioFocus: true,
+//     androidAudioMode: AndroidAudioMode.inCommunication,
+//     androidAudioFocusMode: AndroidAudioFocusMode.gain,
+//     androidAudioAttributesUsageType:
+//         AndroidAudioAttributesUsageType.voiceCommunication,
+//     androidAudioAttributesContentType:
+//         AndroidAudioAttributesContentType.speech,
+//     forceHandleAudioRouting: true,
+//   ),
+// );
       await webRTCService.createOffer();
+      webRTCService.speakerphoneService.startRingtone(isIncoming: false,);
     } else {
       debugPrint("📞 CALLEE: Waiting for offer from caller...");
       // Do nothing - we'll handle the offer when it arrives via WebSocket
@@ -158,8 +176,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
           label: "End",
           onPressed: () async {
             await webRTCService.endCall();
-            chatController.chatWebSocket.callEnded(chatController.roomId);
-            Get.back();
+          webRTCService.speakerphoneService.stopRingtone();
+            chatController.chatWebSocket!.callEnded(chatController.roomId);
+            //Get.back();
+           fromNotification?  Get.offAll(HomeScreen()):Get.back();
+            
           },
         ),
       ],

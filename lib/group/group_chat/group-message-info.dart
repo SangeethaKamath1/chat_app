@@ -6,6 +6,7 @@ import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart'
 
 import 'package:chat_app/constants/app_constant.dart';
 
+import '../../chat_app.dart';
 import '../../routes/chat_app_routes.dart';
 import '../../src/theme/controller/chat_theme_controller.dart';
 
@@ -247,6 +248,7 @@ class GroupMessageInfoScreen extends StatelessWidget {
           ),
           trailing: InkWell(
             onTap:(){
+              // Get.delete<ChatController>(force: true);
                 Get.toNamed(ChatAppRoutes.chat, arguments: {
                                 "name": user.username,
                                 // "description":user

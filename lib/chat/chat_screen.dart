@@ -22,8 +22,8 @@ class ChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ChatController chatController = 
-        Get.find<ChatController>();
+    final ChatController chatController = Get.isRegistered<ChatController>()?
+        Get.find<ChatController>():Get.put(ChatController());
 
     return WillPopScope(
       onWillPop: () async {
@@ -61,48 +61,49 @@ class ChatScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(chatController.name,
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700)),
+             
+                   Text(chatController.name,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700))
+              
+              
             ],
           ),
           backgroundColor: chatConfigController.config.primaryColor,
           actions: [
-            // InkWell(
-            //   onTap: () async {
-            //     try {
-            //       // 1. Request microphone permission
-            //       final micStatus = await Permission.microphone.request();
-            //       if (micStatus.isDenied) {
-            //         Get.snackbar(
-            //             "Permission Required", "Allow microphone access");
-            //         return;
-            //       }
+            InkWell(
+              onTap: () async {
+                try {
+                  // 1. Request microphone permission
+                  final micStatus = await Permission.microphone.request();
+                  if (micStatus.isDenied) {
+                    Get.snackbar(
+                        "Permission Required", "Allow microphone access");
+                    return;
+                  }
       
-            //       // 2. Generate room ID
-            //       chatController.roomId =
-            //           "${chatController.conversationId}_${chatController.uuid.v4()}";
+                  // 2. Generate room ID
+                  chatController.roomId =
+                      "${chatController.conversationId}_${chatController.uuid.v4()}";
       
-            //       // 3. Send call initiation message via WebSocket
-            //       chatController.chatWebSocket
-            //           .initiatingCall(chatController.roomId);
+                
       
-            //       debugPrint("Starting call with room: ${chatController.roomId}");
+                  debugPrint("Starting call with room: ${chatController.roomId}");
       
-            //       // 4. Navigate to call screen as CALLER
-            //       Get.toNamed(ChatAppRoutes.callScreen,
-            //           arguments: {'isCaller': true});
+                  // 4. Navigate to call screen as CALLER
+                  Get.toNamed(ChatAppRoutes.callScreen,
+                      arguments: {'isCaller': true});
       
-            //       // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
-            //     } catch (e) {
-            //       debugPrint("Error starting call: $e");
-            //       Get.snackbar("Call Failed", "Could not start call");
-            //     }
-            //   },
-            //   child: const Icon(Icons.call),
-            // ),
+                  // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
+                } catch (e) {
+                  debugPrint("Error starting call: $e");
+                  Get.snackbar("Call Failed", "Could not start call");
+                }
+              },
+              child: const Icon(Icons.call),
+            ),
             const SizedBox(width: 16),
             Obx(() {
               
@@ -119,7 +120,7 @@ class ChatScreen extends StatelessWidget {
                       icon: const Icon(Icons.delete),
                       onPressed: () {
                         chatController.removeReactionOverlay();
-                        chatController.chatWebSocket
+                        chatController.chatWebSocket!
                             .deleteMessage(chatController.messageId.value);
                       },
                     )
@@ -233,7 +234,7 @@ class ChatScreen extends StatelessWidget {
                               if (conversation.isReacted == false) {
                                 final encryptedText =
                                     EncryptionHelper.encryptText(emoji.emoji);
-                                chatController.chatWebSocket.sendReaction(
+                                chatController.chatWebSocket!.sendReaction(
                                   chatController.messageId.value,
                                   encryptedText,
                                   int.parse(chatController.conversationId),
@@ -250,7 +251,7 @@ class ChatScreen extends StatelessWidget {
                                 conversation.isReacted = true;
                                 final encryptedText =
                                     EncryptionHelper.encryptText(emoji.emoji);
-                                chatController.chatWebSocket.sendReaction(
+                                chatController.chatWebSocket!.sendReaction(
                                   chatController.messageId.value,
                                   encryptedText,
                                   int.parse(chatController.conversationId),
@@ -443,7 +444,7 @@ class ChatScreen extends StatelessWidget {
       if (conversation.isReacted == false) {
         final encryptedText = EncryptionHelper.encryptText(emoji);
 
-        chatController.chatWebSocket.sendReaction(
+        chatController.chatWebSocket!.sendReaction(
           chatController.messageId.value,
           encryptedText,
           int.parse(chatController.conversationId),
@@ -458,7 +459,7 @@ class ChatScreen extends StatelessWidget {
         conversation.reaction = emoji;
         conversation.isReacted = true;
         final encryptedText = EncryptionHelper.encryptText(emoji);
-        chatController.chatWebSocket.sendReaction(
+        chatController.chatWebSocket!.sendReaction(
           chatController.messageId.value,
           encryptedText,
           int.parse(chatController.conversationId),

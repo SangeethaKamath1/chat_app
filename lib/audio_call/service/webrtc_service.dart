@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:chat_app/audio_call/service/speakerphone_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -27,9 +28,7 @@ class WebRTCService extends GetxService {
   RTCIceConnectionState get iceConnectionState => _iceConnectionState.value;
   RTCSignalingState get signalingState => _signalingState.value;
    SpeakerphoneService get speakerphoneService => Get.find<SpeakerphoneService>();
-
-  ChatController get chatController => Get.find<ChatController>();
-
+ChatController get chatController =>Get.find<ChatController>();
   @override
   void onInit() {
     // TODO: implement onInit
@@ -289,6 +288,8 @@ class WebRTCService extends GetxService {
     }
   }
 
+ 
+
   Future<void> handleOffer(RTCSessionDescription offer) async {
     try {
       debugPrint("📥 HANDLING INCOMING OFFER...");
@@ -320,6 +321,7 @@ class WebRTCService extends GetxService {
       debugPrint("🎤 ${mute ? 'MUTED' : 'UNMUTED'}");
     }
   }
+    
 
    Future<void> setSpeakerphoneOn(bool on) async {
     try {
@@ -344,13 +346,16 @@ class WebRTCService extends GetxService {
 
   // WebSocket Signaling
   void _sendOffer(RTCSessionDescription offer) {
+    log("offer type:${offer.type}");
+    log("sdp:${offer.sdp}");
     final payload = {
-      "type": "offer",
+      "type": "call",
       "offer": {"sdp": offer.sdp, "type": offer.type},
       "callID": chatController.roomId
     };
-    chatController.chatWebSocket.channel?.sink.add(jsonEncode(payload));
-    debugPrint("📤 OFFER SENT");
+    chatController.chatWebSocket!.channel?.sink.add(jsonEncode(payload));
+    
+    log("📤 OFFER SENT:${jsonEncode(payload)}");
   }
 
   void _sendAnswer(RTCSessionDescription answer) {
@@ -359,7 +364,7 @@ class WebRTCService extends GetxService {
       "answer": {"sdp": answer.sdp, "type": answer.type},
       "callID": chatController.roomId
     };
-    chatController.chatWebSocket.channel?.sink.add(jsonEncode(payload));
+    chatController.chatWebSocket!.channel?.sink.add(jsonEncode(payload));
     debugPrint("📤 ANSWER SENT");
   }
 
@@ -373,7 +378,7 @@ class WebRTCService extends GetxService {
       },
       "callID": chatController.roomId
     };
-    chatController.chatWebSocket.channel?.sink.add(jsonEncode(payload));
+    chatController.chatWebSocket!.channel?.sink.add(jsonEncode(payload));
     debugPrint("📤 ICE CANDIDATE SENT");
   }
 }

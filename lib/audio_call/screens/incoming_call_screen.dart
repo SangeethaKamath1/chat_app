@@ -5,9 +5,9 @@ import '../../routes/chat_app_routes.dart';
 
 import '../service/webrtc_service.dart';
 
-class IncomingCallScreen extends StatelessWidget {
+class IncomingCallScreen extends StatefulWidget {
   final String roomId;
-  final String callerName;
+final String callerName;
 
   const IncomingCallScreen({
     super.key,
@@ -16,9 +16,28 @@ class IncomingCallScreen extends StatelessWidget {
   });
 
   @override
+  State<IncomingCallScreen> createState() => _IncomingCallScreenState();
+}
+
+class _IncomingCallScreenState extends State<IncomingCallScreen> {
+    late final WebRTCService webRTCService;
+      final ChatController chatController = Get.find<ChatController>();
+      @override
+  void initState() {
+    super.initState();
+    webRTCService = Get.find<WebRTCService>();
+    webRTCService.speakerphoneService.startRingtone(isIncoming: true);
+  }
+
+  @override
+  void dispose() {
+    webRTCService.speakerphoneService.stopRingtone();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
-    final ChatController chatController = Get.find<ChatController>();
-    final WebRTCService webRTCService = Get.find<WebRTCService>();
+  
+  
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -36,7 +55,7 @@ class IncomingCallScreen extends StatelessWidget {
                   const Icon(Icons.account_circle, color: Colors.white70, size: 100),
                   const SizedBox(height: 16),
                   Text(
-                    callerName,
+                    widget.callerName,
                     style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
@@ -59,7 +78,8 @@ class IncomingCallScreen extends StatelessWidget {
                     color: Colors.red,
                     label: "Reject",
                     onPressed: () {
-                      chatController.chatWebSocket.callRejected(roomId);
+                      chatController.chatWebSocket!.callRejected(widget.roomId);
+                       webRTCService.speakerphoneService.stopRingtone();
                       Get.back();
                     },
                   ),
@@ -70,8 +90,9 @@ class IncomingCallScreen extends StatelessWidget {
                     color: Colors.green,
                     label: "Accept",
                     onPressed: () async {
-                      chatController.chatWebSocket.callAccepted(roomId);
-                      chatController.roomId = roomId;
+                      chatController.chatWebSocket!.callAccepted(widget.roomId);
+                      webRTCService.speakerphoneService.stopRingtone();
+                      chatController.roomId = widget.roomId;
                       chatController.callStatus.value = "Connecting...";
 
                       // ✅ FIX: Only navigate to call screen

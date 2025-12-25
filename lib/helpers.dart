@@ -52,7 +52,7 @@ void showReactionOverlay({
 
                         if (conversation.isReacted == false) {
                           final encryptedText=EncryptionHelper.encryptText(emoji);
-                          chatController.chatWebSocket.sendReaction(
+                          chatController.chatWebSocket?.sendReaction(
                             messageId,
                             encryptedText,
                             int.parse(chatController.conversationId),
@@ -66,7 +66,7 @@ void showReactionOverlay({
                           conversation.isReacted=true;
                           conversation.reaction = emoji;
                            final encryptedText=EncryptionHelper.encryptText(emoji);
-                          chatController.chatWebSocket.sendReaction(
+                          chatController.chatWebSocket?.sendReaction(
                             messageId,
                             encryptedText,
                             int.parse(chatController.conversationId),

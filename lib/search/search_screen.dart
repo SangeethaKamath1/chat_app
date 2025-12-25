@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../chat/chat_websocket/ping_web_socket.dart';
+import '../chat_app.dart';
 import '../routes/chat_app_routes.dart';
 
 import '../src/theme/controller/chat_theme_controller.dart';
@@ -65,7 +66,8 @@ class UserSearchScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (searchController.results.isEmpty) {
-                  return const Center(child: Text("No users found"));
+                  return  Center(child: Text("No users found",style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+                    )));
                 }
                 return ListView.builder(
                   itemCount: searchController.results.length,
@@ -101,9 +103,9 @@ class UserSearchScreen extends StatelessWidget {
                                     ),),
                       title: Text(user.username??"",style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,)),
                       onTap: () {
+                          //  Get.delete<ChatController>(force: true);
                         //chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, user.conversationId??0);
-                       Get.delete<PingWebSocketService>(force: true);
-   Get.put(PingWebSocketService()).connect();
+                     
                        Get.toNamed(ChatAppRoutes.chat,
                        arguments: {
                         "id":user.id,
@@ -112,6 +114,8 @@ class UserSearchScreen extends StatelessWidget {
                        // user.conversationId ?? 
                         ""
                        });
+                         Get.delete<PingWebSocketService>(force: true);
+   Get.put(PingWebSocketService()).connect();
                       },
                     );
                   },
