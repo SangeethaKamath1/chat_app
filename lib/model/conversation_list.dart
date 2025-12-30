@@ -46,6 +46,7 @@ class Conversations {
   String? senderUsername;
   String? message;
   String? status;
+  List<String>? medias;
   bool? isReacted;
   String? reaction;
   Conversations? replayTo;
@@ -60,6 +61,7 @@ class Conversations {
       this.isReacted,
       this.message,
       this.status,
+      this.medias,
       this.replayTo,
       this.reaction,
       this.reactionCount,
@@ -76,6 +78,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
     senderUsername : json['senderUsername'],
     message : json['message'],
     status :json['status'],
+    medias :json['medias'],
      reaction :json['reaction'],
     replayTo : json['replayTo'] != null
         ?  Conversations.fromJson(json['replayTo'])
@@ -94,6 +97,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
     data['senderUUID'] = this.senderUUID;
     data['senderUsername'] = this.senderUsername;
     data['message'] = this.message;
+    data["medias"]=this.medias;
     data['status'] = this.status;
      data['reaction'] = this.reaction;
     data['isReacted']=this.isReacted;

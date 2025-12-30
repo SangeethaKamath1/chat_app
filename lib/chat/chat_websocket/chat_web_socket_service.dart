@@ -34,7 +34,7 @@ class ChatWebSocketService extends GetxService{
   
   channel?.stream.listen((event) async {
     final data = jsonDecode(event);
-    debugPrint("📡 WebSocket event: ${data["type"]}");
+    debugPrint("📡 WebSocket event: ${data}");
     
     if(data["type"] == "msg") {
       final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
@@ -54,6 +54,27 @@ class ChatWebSocketService extends GetxService{
         senderUUID: data["sender"] ?? "",
         senderUsername: data['senderUsername']??"",
         message: decryptedMsg,
+        replayTo: replyTo
+      ));
+    }
+    else if(data["type"] == "media"){
+       var replyTo;
+      if(data["replyTo"] != null&&data["replyTo"]!="") {
+        replyTo = Conversations(
+          id: data["replyTo"] ?? "",
+          senderUUID: data["receiver"] ?? "",
+          senderUsername: data["receiverUsername"] ?? "",
+          message: null,
+          medias: data["reply"]
+        );
+      } else {
+        replyTo = null;
+      }
+       chatController.conversations.insert(0, Conversations(
+        id: data["messageId"] ?? "",
+        senderUUID: data["sender"] ?? "",
+        senderUsername: data['senderUsername']??"",
+        medias: data["url"],
         replayTo: replyTo
       ));
     }
@@ -262,13 +283,14 @@ class ChatWebSocketService extends GetxService{
     }
 
     void deleteMessage(String messageId){
+      debugPrint("delete indeex111:${chatController.chatIndex.value}");
       final payload = {
         "type":"delete",
         "messageId":messageId
       };
         channel?.sink.add(jsonEncode(payload));
       
-         debugPrint("message id jdnjsdn :${messageId}");
+         debugPrint("message id jdnjsdn :${messageId},${chatController.chatIndex.value}");
         chatController.conversations.removeAt(chatController.chatIndex.value);
         chatController.conversations.refresh();
         chatController.messageId.value="";
@@ -279,7 +301,7 @@ class ChatWebSocketService extends GetxService{
 
 
 
-void sendMessageWithReply({required String replyTo,required String receiver,required receiverUsername,required String reply,required String messageId,required String message}){
+void sendMessageWithReply({required String replyTo,required String receiver,required receiverUsername,required List<String> reply,required String messageId,required String message}){
       final payload={
         "type":"msg",
         "replyTo":replyTo,
