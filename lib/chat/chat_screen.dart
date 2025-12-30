@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/constants/app_constant.dart';
 
@@ -12,18 +15,20 @@ import '../audio_call/controller/jitsi_call_controller.dart';
 import '../audio_call/service/webrtc_service.dart';
 import '../routes/chat_app_routes.dart';
 import '../src/theme/controller/chat_theme_controller.dart';
+import 'components/attachment_bottom_sheet.dart';
 import 'components/chat_message_bubble.dart';
 import 'components/chat_shimmer.dart';
 import 'controller/chat_controller.dart';
 import 'helpers/encryption_helper.dart';
 
 class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
-
+   ChatScreen({super.key});
+ final ChatController chatController = Get.isRegistered<ChatController>()
+        ? Get.find<ChatController>()
+        : Get.put(ChatController());
   @override
   Widget build(BuildContext context) {
-    final ChatController chatController = Get.isRegistered<ChatController>()?
-        Get.find<ChatController>():Get.put(ChatController());
+   
 
     return WillPopScope(
       onWillPop: () async {
@@ -61,14 +66,11 @@ class ChatScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-             
-                   Text(chatController.name,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700))
-              
-              
+              Text(chatController.name,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700))
             ],
           ),
           backgroundColor: chatConfigController.config.primaryColor,
@@ -83,19 +85,18 @@ class ChatScreen extends StatelessWidget {
                         "Permission Required", "Allow microphone access");
                     return;
                   }
-      
+
                   // 2. Generate room ID
                   chatController.roomId =
                       "${chatController.conversationId}_${chatController.uuid.v4()}";
-      
-                
-      
-                  debugPrint("Starting call with room: ${chatController.roomId}");
-      
+
+                  debugPrint(
+                      "Starting call with room: ${chatController.roomId}");
+
                   // 4. Navigate to call screen as CALLER
                   Get.toNamed(ChatAppRoutes.callScreen,
                       arguments: {'isCaller': true});
-      
+
                   // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
                 } catch (e) {
                   debugPrint("Error starting call: $e");
@@ -106,9 +107,6 @@ class ChatScreen extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Obx(() {
-              
-             
-              
               return chatController.messageId.isNotEmpty &&
                       chatConfigController.config.prefs
                               .getInt(chatConfigController.config.id)
@@ -120,6 +118,7 @@ class ChatScreen extends StatelessWidget {
                       icon: const Icon(Icons.delete),
                       onPressed: () {
                         chatController.removeReactionOverlay();
+                        debugPrint("deleteindex:${chatController.chatIndex.value}");
                         chatController.chatWebSocket!
                             .deleteMessage(chatController.messageId.value);
                       },
@@ -128,13 +127,14 @@ class ChatScreen extends StatelessWidget {
             }),
           ],
         ),
-      
+
         // MAIN BODY
         body: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
             if (notification.metrics.pixels ==
                 notification.metrics.maxScrollExtent) {
-              if (!chatController.isLoading.value && !chatController.isFetching.value) {
+              if (!chatController.isLoading.value &&
+                  !chatController.isFetching.value) {
                 chatController.getConversationsList();
               }
               return true;
@@ -147,10 +147,11 @@ class ChatScreen extends StatelessWidget {
               // 🧱 Message List
               Expanded(
                 child: Obx(() {
-                  if (chatController.isLoading.value ||chatController.isCreateConversationLoading.value) {
-      return const ChatShimmer();     // 👈 show shimmer here
-          }
-      
+                  if (chatController.isLoading.value ||
+                      chatController.isCreateConversationLoading.value) {
+                    return const ChatShimmer(); // 👈 show shimmer here
+                  }
+
                   return GestureDetector(
                     behavior: HitTestBehavior.translucent,
                     onTap: () {
@@ -172,7 +173,7 @@ class ChatScreen extends StatelessWidget {
                           final isMine = message.senderUsername ==
                               chatConfigController.config.prefs.getString(
                                   chatConfigController.config.username);
-      
+
                           return ChatMessageBubble(
                             message: message,
                             index: index,
@@ -193,7 +194,12 @@ class ChatScreen extends StatelessWidget {
                             alignment: Alignment.topLeft,
                             child: Text(
                               "typing...",
-                              style:TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black),
+                              style: TextStyle(
+                                  color: MediaQuery.platformBrightnessOf(
+                                              context) ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black),
                               textAlign: TextAlign.left,
                             )),
                       )
@@ -207,7 +213,7 @@ class ChatScreen extends StatelessWidget {
                       ? Colors.black
                       : Colors.white,
                   child: _buildMessageInputArea(context, chatController)),
-      
+
               // 😀 Emoji Picker
               Obx(() {
                 return chatController.showEmojiPicker.value
@@ -226,11 +232,10 @@ class ChatScreen extends StatelessWidget {
                             ),
                           ),
                           onEmojiSelected: (category, emoji) {
-                         
                             if (chatController.messageId.value.isNotEmpty) {
                               final conversation = chatController.conversations[
                                   chatController.chatIndex.value];
-      
+
                               if (conversation.isReacted == false) {
                                 final encryptedText =
                                     EncryptionHelper.encryptText(emoji.emoji);
@@ -257,7 +262,7 @@ class ChatScreen extends StatelessWidget {
                                   int.parse(chatController.conversationId),
                                 );
                               }
-      
+
                               chatController.conversations.refresh();
                               chatController.messageController.clear();
                               chatController.chatIndex.value = -1;
@@ -266,19 +271,21 @@ class ChatScreen extends StatelessWidget {
                             } else {
                               chatController.messageController.text +=
                                   emoji.emoji;
-                                  chatController.messageController.selection =
-                                TextSelection.fromPosition(
-                              TextPosition(
-                                  offset: chatController
-                                      .messageController.text.length),
-                            );
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-          chatController.textFieldScrollController.animateTo(
-      chatController.textFieldScrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOut,
-          );
-        });
+                              chatController.messageController.selection =
+                                  TextSelection.fromPosition(
+                                TextPosition(
+                                    offset: chatController
+                                        .messageController.text.length),
+                              );
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                chatController.textFieldScrollController
+                                    .animateTo(
+                                  chatController.textFieldScrollController
+                                      .position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 100),
+                                  curve: Curves.easeOut,
+                                );
+                              });
                             }
                           },
                         ),
@@ -308,6 +315,21 @@ class ChatScreen extends StatelessWidget {
           // Message Input
           Row(
             children: [
+              IconButton(
+  icon: const Icon(Icons.attach_file),
+  onPressed: () {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => AttachmentBottomSheet(
+        chatController: chatController,
+      ),
+    );
+  },
+),
+
               IconButton(
                 icon: const Icon(Icons.add_reaction, color: Colors.orange),
                 onPressed: () {
@@ -386,50 +408,138 @@ class ChatScreen extends StatelessWidget {
       ),
     );
   }
-
-  // 🧱 Reply Preview Bar
-  Widget _buildReplyPreview(ChatController chatController, replyMsg) {
+  Widget _fallback() {
     return Container(
-      padding: const EdgeInsets.all(8),
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Container(
-              width: 4,
-              height: 40,
-              color: chatConfigController.config.primaryColor),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  replyMsg.senderUsername ?? "Unknown",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: chatConfigController.config.primaryColor,
-                  ),
-                ),
-                Text(
-                  replyMsg.message ?? "",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            onPressed: chatController.clearReply,
-          ),
-        ],
-      ),
+      width: 40,
+      height: 40,
+      color: Colors.grey[400],
+      child: const Icon(Icons.image, size: 20),
     );
   }
+  // 🧱 Reply Preview Bar
+Widget _buildReplyPreview(ChatController chatController, replyMsg) {
+  final bool hasText =
+      replyMsg.message != null && replyMsg.message!.trim().isNotEmpty;
+
+  final List<String> medias = replyMsg.medias ?? [];
+  final bool hasSingleMedia = medias.length == 1;
+  final bool hasMultipleMedia = medias.length > 1;
+
+  Widget _buildMediaThumb(String path) {
+    if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(),
+      );
+    }
+    return Image.file(
+      File(path),
+      width: 40,
+      height: 40,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _fallback(),
+    );
+  }
+
+
+
+  return Container(
+    padding: const EdgeInsets.all(8),
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.grey[200],
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      children: [
+        // Left color bar
+        Container(
+          width: 4,
+          height: 44,
+          decoration: BoxDecoration(
+            color: chatConfigController.config.primaryColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        /// ✅ CASE 2: Single media → show thumbnail
+        if (hasSingleMedia)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: _buildMediaThumb(medias.first),
+          ),
+
+        if (hasSingleMedia) const SizedBox(width: 8),
+
+        // Text content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Sender name
+              Text(
+                replyMsg.senderUsername ?? "Unknown",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: chatConfigController.config.primaryColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 2),
+
+              /// ✅ CASE 3: Multiple media
+              if (hasMultipleMedia)
+                Text(
+                  "Replying to ${replyMsg.senderUsername}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                )
+
+              /// ✅ CASE 1: Text message (1 line only)
+              else if (hasText)
+                Text(
+                  replyMsg.message!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                )
+
+              /// Fallback (single media label)
+              else
+                const Text(
+                  "📷 Photo",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        IconButton(
+          icon: const Icon(Icons.close, size: 18),
+          onPressed: chatController.clearReply,
+        ),
+      ],
+    ),
+  );
+}
+
 
   // 🧱 Handle Message Send / Reaction Send
   void _handleSend(ChatController chatController) {

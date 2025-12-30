@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/constants/app_constant.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:uuid/uuid.dart';
 
@@ -19,6 +23,7 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   String userId = "";
   String name = "";
   String icon="";
+  final ImagePicker _picker = ImagePicker();
  
   String roomId="";
   final callStatus = "Connecting...".obs;
@@ -60,6 +65,91 @@ class ChatController extends FullLifeCycleController with FullLifeCycleMixin {
   void clearReply() {
     replyMessage.value = null;
   }
+  Future<void> pickMediaFromGallery({required bool isCamera}) async {
+  final List<XFile> files = await _picker.pickMultiImage(
+    limit: 5,);
+if (files.isEmpty) return;
+final selectedFiles = files.take(5).toList();
+var mediaIds = [];
+
+debugPrint("media ids:${mediaIds}");
+ final Map<String, dynamic> requestData={
+  "conversationId":conversationId,
+  "messageId":"${conversationId}_${uuid.v4()}",
+  "replyTo":replyMessage.value!=null?replyMessage.value?.id??"":null
+
+  //"reply":
+ };
+//   await Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (_) => MediaPreviewScreen(
+//       files: selectedFiles,
+//       onSend: () {
+//         chatController.sendImages(selectedFiles);
+//       },
+//     ),
+//   ),
+// );
+
+  await sendAttachment(
+   requestData: requestData,
+   files: selectedFiles
+  );
+   
+  // replyMessage.value=null;
+}
+
+  Future<void> pickMediaFromCamera({required bool isCamera}) async {
+  final XFile? file = await _picker.pickImage(
+   source: ImageSource.camera);
+if (file==null) return;
+//final selectedFiles = files.take(5).toList();
+//   await Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (_) => MediaPreviewScreen(
+//       files: selectedFiles,
+//       onSend: () {
+//         chatController.sendImages(selectedFiles);
+//       },
+//     ),
+//   ),
+// );
+
+  // await sendAttachment(
+  //   filePath: file.path,
+  //   type: "IMAGE",
+  //   replyToMessageId: replyMessage.value!=null?replyMessage.value?.id??"":null,
+  //   reply: replyMessage.value!=null?replyMessage.value?.url!=null?replyMessage.value?.url??"":replyMessage.value?.message??"":null
+  // );
+   
+  // replyMessage.value=null;
+}
+
+Future<void> sendAttachment({required Map<String,dynamic> requestData,required List<XFile> files
+})async{
+final response= await ChatRepository.sendMedia(files,requestData
+//replyToMessageId,reply
+);
+if(response.files!.isNotEmpty){
+  
+}
+debugPrint("media response:${response.conversationId}");
+}
+
+// Future<void> pickDocument() async {
+//   final result = await FilePicker.platform.pickFiles();
+
+//   if (result == null) return;
+
+//   final file = result.files.single;
+
+//   await sendAttachment(
+//     filePath: file.path!,
+//     type: "DOCUMENT",
+//   );
+// }
 
   // Messages list
 // final RxList<String> messages = <String>[].obs;
@@ -141,13 +231,18 @@ if(Get.arguments!=null){
     if (text.isEmpty) return;
 
     final replyTo = replyMessage.value;
+    debugPrint("what is in reply2:${jsonEncode(replyTo)}");
     final encryptedText = EncryptionHelper.encryptText(text);
     // Add your API/WebSocket call here with replyId
     chatWebSocket!.sendMessageWithReply(
      replyTo: replyTo?.id??"",
      receiver:replyTo?.senderUUID??"",
      receiverUsername: replyTo?.senderUsername??"",
-     reply: replyTo?.message??"", messageId:"${conversationId}_${uuid.v4()}", message:  encryptedText,
+     reply: replyTo?.medias != null
+    ? (replyTo!.medias ?? <String>[])
+    : (replyTo?.message != null ? [replyTo!.message!] : <String>[]),
+      messageId:"${conversationId}_${uuid.v4()}", 
+     message:  encryptedText,
     );
 
     // Update UI

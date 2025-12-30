@@ -23,6 +23,7 @@ class ApiConstants {
    static const String messageStatus = "${chatService}group/message-stats/";
    static const String exitGroup ="${chatService}group/exit/";
    static const String currentGroupDetails="${chatService}group/";
+   static const String sendMedia = "${chatService}conversation/send-media";
    static const String searchUser="https://dev.trrings.com/user-service/api/v1/user-follow/getFollower";
 
   
