@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../chat_app.dart';
+import '../controller/group_chat_controller.dart';
+
+
 
 class AttachmentBottomSheet extends StatelessWidget {
-  final ChatController chatController;
+  final GroupChatController chatController;
 
   const AttachmentBottomSheet({super.key, required this.chatController});
 

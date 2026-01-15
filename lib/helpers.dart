@@ -75,6 +75,9 @@ void showReactionOverlay({
                         chatController.conversations.refresh();
                         chatController.removeReactionOverlay();
                         chatController.chatIndex.value = -1;
+                        debugPrint("chat controller -1 inside helpers");
+                        chatController.messageId.value = "";
+                        chatController.showEmojiPicker.value = false;
                       }
                     },
                     child: Padding(
@@ -145,7 +148,7 @@ void showReactionOverlayForGroup({
 
                         if (conversation.isReacted == false) {
                           final encryptedText=EncryptionHelper.encryptText(emoji);
-                          chatController.chatWebSocket.sendReaction(
+                          chatController.chatWebSocket!.sendReaction(
                             messageId,
                             encryptedText,
                             int.parse(chatController.conversationId),
@@ -158,7 +161,7 @@ void showReactionOverlayForGroup({
                           conversation.reactions?.add(emoji);
                           conversation.reaction = emoji;
                            final encryptedText=EncryptionHelper.encryptText(emoji);
-                          chatController.chatWebSocket.sendReaction(
+                          chatController.chatWebSocket!.sendReaction(
                             messageId,
                             encryptedText,
                             int.parse(chatController.conversationId),
@@ -167,6 +170,7 @@ void showReactionOverlayForGroup({
                         chatController.conversations.refresh();
                         chatController.removeReactionOverlay();
                         chatController.chatIndex.value = -1;
+                        debugPrint("chat controller -1 inside helpers");
                       }
                     },
                     child: Padding(

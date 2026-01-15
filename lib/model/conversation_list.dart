@@ -46,12 +46,17 @@ class Conversations {
   String? senderUsername;
   String? message;
   String? status;
-  List<String>? medias;
+  List<dynamic>? medias;
   bool? isReacted;
   String? reaction;
   Conversations? replayTo;
    RxList<String>? reactions = <String>[].obs;
   int? createdAt;
+  // ADD THESE NEW FIELDS FOR PROGRESS TRACKING
+  RxDouble? uploadProgress; // 0.0 to 1.0 for sender
+  RxDouble? downloadProgress; // 0.0 to 1.0 for receiver
+  RxBool? isUploading; // true while uploading
+  RxBool? isDownloading; // true while downloading
   int? reactionCount;
 
   Conversations(
@@ -64,6 +69,10 @@ class Conversations {
       this.medias,
       this.replayTo,
       this.reaction,
+       this.uploadProgress,
+    this.downloadProgress,
+    this.isUploading,
+    this.isDownloading,
       this.reactionCount,
      RxList<String>? reactions,
       this.createdAt}){
@@ -72,7 +81,7 @@ class Conversations {
       
 
 factory   Conversations.fromJson(Map<String, dynamic> json) {
-    final rawReactions = json['reactions'];
+    
    return Conversations( id : json['id'],
     senderUUID : json['senderUUID'],
     senderUsername : json['senderUsername'],

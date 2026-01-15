@@ -1,43 +1,82 @@
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../chat/controller/chat_controller.dart';
-import '../../routes/chat_app_routes.dart';
+import 'dart:io';
+import 'dart:developer';
 
+import 'package:amu_alumni/amu_alumni.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:get/get.dart';
+
+import '../../chat_app.dart';
+import '../../routes/chat_app_routes.dart';
+import '../controller/call_session_controller.dart';
+import '../service/call_signaling_service.dart';
 import '../service/webrtc_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
-  final String roomId;
-final String callerName;
-
-  const IncomingCallScreen({
-    super.key,
-    required this.roomId,
-    required this.callerName,
-  });
+  const IncomingCallScreen({super.key});
 
   @override
   State<IncomingCallScreen> createState() => _IncomingCallScreenState();
 }
 
 class _IncomingCallScreenState extends State<IncomingCallScreen> {
-    late final WebRTCService webRTCService;
-      final ChatController chatController = Get.find<ChatController>();
-      @override
+  late final WebRTCService webrtc;
+  late final ChatWebSocketService signaling;
+  late final CallSessionController session;
+
+  bool fromNotification = false;
+  String callerId = "";
+  String roomId = "";
+  String callerName = "";
+  String sdp = "";
+  String offerType = "";
+
+  @override
   void initState() {
     super.initState();
-    webRTCService = Get.find<WebRTCService>();
-    webRTCService.speakerphoneService.startRingtone(isIncoming: true);
+
+    final args = (Get.arguments ?? {}) as Map;
+    fromNotification = (args['fromNotification'] ?? false) as bool;
+    callerId = (args["callerId"] ?? "").toString();
+    roomId = (args["roomId"] ?? "").toString();
+    callerName = (args["callerName"] ?? "").toString();
+    sdp = (args["sdp"] ?? "").toString();
+    offerType = (args["offerType"] ?? "offer").toString();
+
+    webrtc = Get.find<WebRTCService>();
+    signaling = Get.find<ChatWebSocketService>();
+    session = Get.find<CallSessionController>();
+
+    // ✅ default to VIDEO (can override later via args["isVideo"]=false)
+    final isVideo =
+        args.containsKey("isVideo") ? (args["isVideo"] as bool) : true;
+
+    session.hydrate(
+      roomId: roomId,
+      isCaller: false,
+      fromNotification: fromNotification,
+      peerId: callerId,
+      peerName: callerName,
+      isVideo: isVideo,
+    );
+
+    signaling.setRoom(roomId);
+    signaling.ensureConnectedFromRoomId(roomId);
+debugPrint("from notification:${fromNotification}");
+    if (!fromNotification) {
+      webrtc.speakerphoneService.startRingtone(isIncoming: true);
+    }
   }
 
   @override
   void dispose() {
-    webRTCService.speakerphoneService.stopRingtone();
+    webrtc.speakerphoneService.stopRingtone();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
-  
-  
+    log("IncomingCallScreen offerType=$offerType");
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -45,26 +84,33 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Caller Info
             Positioned(
               top: 160,
               left: 0,
               right: 0,
               child: Column(
                 children: [
-                  const Icon(Icons.account_circle, color: Colors.white70, size: 100),
+                  const Icon(Icons.account_circle,
+                      color: Colors.white70, size: 100),
                   const SizedBox(height: 16),
                   Text(
-                    widget.callerName,
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+                    callerName,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  const Text("Incoming call...", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  Obx(() => Text(
+                        session.isVideo.value
+                            ? "Incoming video call..."
+                            : "Incoming audio call...",
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 16),
+                      )),
                 ],
               ),
             ),
-
-            // Accept/Reject buttons
             Positioned(
               bottom: 120,
               left: 0,
@@ -72,32 +118,57 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Reject
-                  _buildActionButton(
+                  _actionButton(
                     icon: Icons.call_end,
                     color: Colors.red,
                     label: "Reject",
-                    onPressed: () {
-                      chatController.chatWebSocket!.callRejected(widget.roomId);
-                       webRTCService.speakerphoneService.stopRingtone();
-                      Get.back();
+                    onPressed: () async {
+                      webrtc.speakerphoneService.stopRingtone();
+                      signaling.callRejected(roomId);
+                      if (Platform.isIOS) {
+                        await CallKitBridge.dismissIncoming(roomId);
+                      }
+                      fromNotification
+                          ? Get.offAllNamed(AppRoutes.home)
+                          : Get.back();
                     },
                   ),
-
-                  // Accept - FIXED: Remove createAnswer() call
-                  _buildActionButton(
+                  _actionButton(
                     icon: Icons.call,
                     color: Colors.green,
                     label: "Accept",
                     onPressed: () async {
-                      chatController.chatWebSocket!.callAccepted(widget.roomId);
-                      webRTCService.speakerphoneService.stopRingtone();
-                      chatController.roomId = widget.roomId;
-                      chatController.callStatus.value = "Connecting...";
+                      webrtc.speakerphoneService.stopRingtone();
+                      // await webrtc.activateCallAudioSession();
 
-                      // ✅ FIX: Only navigate to call screen
-                      // The WebRTC answer will be created when we receive the offer
-                      Get.offNamed(ChatAppRoutes.callScreen);
+                      signaling.setRoom(roomId);
+                      signaling.ensureConnectedFromRoomId(roomId);
+                          
+                            if (Platform.isIOS) {
+                        await CallKitBridge.acceptCallFromApp(roomId);
+                      }
+
+                      // ✅ Apply offer. WebRTCService auto-detects video from SDP ("m=video")
+                      await webrtc
+                          .handleOffer(RTCSessionDescription(sdp, offerType));
+                    
+
+                      // signaling.callAccepted(roomId);
+                    
+
+                      Get.offNamed(
+                        ChatAppRoutes.callScreen,
+                        arguments: {
+                          "fromNotification": fromNotification,
+                          "isCaller": false,
+                          "roomId": roomId,
+                          "callerId": callerId,
+                          "callerName": callerName,
+                          // ✅ You can omit isVideo here, because SDP decides.
+                          // But we keep it for UI correctness before SDP track arrives.
+                          "isVideo": session.isVideo.value,
+                        },
+                      );
                     },
                   ),
                 ],
@@ -109,7 +180,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     );
   }
 
-  Widget _buildActionButton({
+  Widget _actionButton({
     required IconData icon,
     required Color color,
     required String label,

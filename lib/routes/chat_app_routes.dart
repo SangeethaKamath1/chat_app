@@ -1,5 +1,5 @@
+import 'package:chat_app/audio_call/controller/binding/call_binding.dart';
 import 'package:chat_app/audio_call/screens/call_screen.dart';
-import 'package:chat_app/audio_call/controller/call_bindig.dart';
 import 'package:chat_app/bindings/auth_binding.dart';
 import 'package:chat_app/chat/chat_screen.dart';
 import 'package:chat_app/chat/controller/chat_binding.dart';
@@ -13,9 +13,12 @@ import 'package:get/route_manager.dart';
 
 import '../add_members/chat_add_members_screen.dart';
 import '../add_members/controller/chat_add_members_binding.dart';
+import '../audio_call/screens/incoming_call_screen.dart';
 import '../group/create_group/controller/create_group_binding.dart';
 import '../group/group_detail/controller/group_detail_binding.dart';
 import '../group/group_detail/group_detail_screen.dart';
+import '../group_audio_video_call/screens/group_call_screen.dart';
+import '../group_audio_video_call/screens/group_incoming_call_screen.dart';
 import '../recent_conversation/controller/recent_conversation_binding.dart';
 import '../search/controller/search_binding.dart';
 import '../search/search_screen.dart';
@@ -35,6 +38,8 @@ class ChatAppRoutes{
   static const String groupChatScreen="/groupChatScreen";
   static const String callScreen ="/callScreen";
   static const String incomingCallScreen ="/incomingCallScreen";
+  static const String groupCallScreen ="/groupCallScreen";
+  static const String groupIncomingCallScreen = '/groupIncomingCallScreen';
   static List<GetPage> pages=[
   // GetPage(
   //     name: login,
@@ -78,7 +83,22 @@ class ChatAppRoutes{
       ),
       GetPage(name:callScreen,
       page:()=>VoiceCallScreen(),
+      //binding: CallBinding()
      ),
+
+     GetPage(
+      name: ChatAppRoutes.incomingCallScreen,
+      page: () => IncomingCallScreen(
+      
+      ),
+      //binding: CallBinding()
+    )
+      ,
+      GetPage(name:groupCallScreen,
+      page:()=>GroupCallScreen(),
+     ),
+     GetPage(name:groupIncomingCallScreen,
+     page:()=>GroupIncomingCallScreen()),
 
       GetPage(name:viewMembers,
       page:()=>ViewMembersScreen(),
