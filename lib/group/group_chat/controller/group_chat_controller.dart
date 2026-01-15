@@ -1,14 +1,12 @@
 import 'dart:async';
-
-import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
+import 'dart:convert';
 import 'package:chat_app/chat/chat_websocket/group_chat_web_socket_service.dart';
-import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/group/group_detail/repository/group_detail_repository.dart';
 import 'package:chat_app/group/repository/group_chat_repository.dart';
 import 'package:chat_app/model/group_message_status.dart';
-import 'package:chat_app/service/dio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../chat/helpers/encryption_helper.dart';
@@ -18,11 +16,12 @@ import '../../../model/conversation_list.dart';
 import '../../../model/reaction_list_response.dart';
 import '../../../model/user.dart';
 
-class GroupChatController extends FullLifeCycleController with FullLifeCycleMixin {
+class GroupChatController extends GetxController {
   String userId = "";
   RxString name = "".obs;
   RxString groupIcon = "".obs;
   RxString typingUser="".obs;
+  String roomId="";
   RxString description = "".obs;
    RxInt chatIndex = (-1).obs;
    final RxBool isFetching = false.obs;
@@ -32,7 +31,7 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
   RxList<UserStatus> sentList=<UserStatus>[].obs;
   RxList<UserStatus> deliveredList=<UserStatus>[].obs;
   RxList<UserStatus> seen=<UserStatus>[].obs;
-
+  final ImagePicker _picker = ImagePicker();
   int reactionsPageNumber = 0;
   RxList<Reaction> reactions = <Reaction>[].obs;
   bool isReactionLastPage = false;
@@ -63,7 +62,9 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
 
   // Messages list
 // final RxList<String> messages = <String>[].obs;
-  late final GroupChatWebSocketService chatWebSocket;
+  GroupChatWebSocketService chatWebSocket =Get.isRegistered<GroupChatWebSocketService>()
+      ? Get.find<GroupChatWebSocketService>()
+      : Get.put(GroupChatWebSocketService());
   var showEmojiPicker = false.obs; // <-- reactive state
 
   OverlayEntry? reactionOverlayEntry;
@@ -96,31 +97,298 @@ class GroupChatController extends FullLifeCycleController with FullLifeCycleMixi
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{
+     
 
     if (conversationId.isNotEmpty) {
       getCurrentGroupDetails();
-    
-      chatWebSocket = Get.put(GroupChatWebSocketService(this));
-      chatWebSocket.connect(int.parse(conversationId));
+    getConversationsList();
+      
+      chatWebSocket!.connect(int.parse(conversationId));
 
       // //  chatWebSocket = Get.put(ChatWebSocketService(this));
 
       // }
-      if (conversations.isEmpty) {
-      getConversationsList();
-    }
+    
     }
   }
 
   void onTextChanged(String value) {
     if (value.isNotEmpty) {
-      chatWebSocket.onChanged(true);
+      chatWebSocket!.onChanged(true);
       typingTimer?.cancel();
       typingTimer = Timer(const Duration(seconds: 2), () {
-        chatWebSocket.onChanged(false);
+        chatWebSocket!.onChanged(false);
       });
     }
   }
+
+  Future<void> pickMediaFromGallery({required bool isCamera}) async {
+  final List<XFile> files = await _picker.pickMultipleMedia(
+    limit: 5,);
+if (files.isEmpty) return;
+final selectedFiles = files.take(5).toList();
+
+final List<dynamic> mediaPaths =
+    selectedFiles.map((x) => x.path).toList();
+ final messageId = "${conversationId}_${uuid.v4()}";
+
+//  final payload = {
+//         "type": "msg",
+//         "replyTo": replyTo,
+//         "receiver": receiver,
+//         "receiverUsername": receiverUsername,
+//         "messageId": messageId,
+//         "msg": message,
+//         "urls": urls
+//       };
+
+
+//  chatWebSocket!.sendMessageWithReply(
+//      replyTo: replyTo?.id??"",
+//      receiver:replyTo?.senderUUID??"",
+//      receiverUsername: replyTo?.senderUsername??"",
+//      reply:replyTo?.message != null ?replyTo!.message??"":"",
+//      urls:replyTo?.medias,
+//     //   replyTo?.medias != null
+//     // ? (replyTo!.medias ?? <dynamic>[])
+//     // : (replyTo?.message != null ? [replyTo!.message!] : <dynamic>[]),
+//       messageId:messageId, 
+//      message:  encryptedText,
+//     );
+
+ final Map<String, dynamic> requestData={
+  "conversationId":conversationId,
+  "messageId":messageId,
+  "replyTo":replyMessage.value!=null?replyMessage.value?.id??"":null,
+  "receiver":replyMessage.value!=null?replyMessage.value?.senderUUID??"":null,
+  "receiverUsername":replyMessage.value!=null?replyMessage.value?.senderUsername??"":null,
+  "urls":replyMessage.value!=null &&replyMessage.value?.medias!=null?replyMessage.value?.medias:null
+
+  //"reply":
+ };
+ debugPrint("media paths:${mediaPaths},${requestData["replyTo"]}");
+ conversations.insert(
+    0,
+    Conversations(
+      id: messageId,
+      senderUUID: chatConfigController.config.prefs.getInt(chatConfigController.config.id).toString(),
+      medias: mediaPaths,
+      senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.username),
+     replayTo:replyMessage.value,
+      status: "SEND",
+        uploadProgress: 0.0.obs, // Initialize upload progress
+    isUploading: true.obs, 
+    ),
+  );
+    conversations.refresh();
+
+//   await Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (_) => MediaPreviewScreen(
+//       files: selectedFiles,
+//       onSend: () {
+//         chatController.sendImages(selectedFiles);
+//       },
+//     ),
+//   ),
+// );
+replyMessage.value=null;
+
+  await sendAttachmentWithProgress(
+    requestData: requestData,
+    files: selectedFiles,
+    messageId: messageId,
+  );
+
+   
+   
+}
+
+Future<void> sendAttachmentWithProgress({
+  required Map<String, dynamic> requestData,
+  required List<XFile> files,
+  required String messageId,
+}) async {
+  try {
+    final response = await ChatRepository.sendMediaWithProgress(
+      files,
+      requestData,
+      onProgress: (progress) {
+        // ✅ Update upload progress in real-time
+        final index = conversations.indexWhere((m) => m.id == messageId);
+        if (index != -1) {
+          conversations[index].uploadProgress?.value = progress;
+          conversations.refresh();
+          debugPrint('Message $messageId upload: ${(progress * 100).toInt()}%');
+        }
+      },
+    );
+
+    // ✅ Upload successful - extract ONLY URLs from response
+    if (response.files != null && response.files!.isNotEmpty) {
+      final index = conversations.indexWhere((m) => m.id == messageId);
+      if (index != -1) {
+        // Extract only the URL strings from MediaFile objects
+        final List<String> urls = response.files!
+            .where((file) => file.url != null && file.success == true)
+            .map((file) => file.url!)
+            .toList();
+        
+        debugPrint('✅ Upload complete. URLs: $urls');
+        
+        // Replace local paths with network URLs
+        conversations[index].medias = urls; // List<String> of URLs
+        conversations[index].isUploading?.value = false;
+        conversations[index].uploadProgress = null;
+        conversations[index].status = "DELIVERED";
+        // conversations[index].id = response?.messageId;
+        conversations.refresh();
+      }
+       debugPrint("conversation after upload:${jsonEncode(conversations.first)}");
+    }
+  } catch (e) {
+    debugPrint("❌ Upload error: $e");
+    
+    // ✅ Mark upload as failed
+    final index = conversations.indexWhere((m) => m.id == messageId);
+    if (index != -1) {
+      conversations[index].isUploading?.value = false;
+      conversations[index].uploadProgress = null;
+      conversations[index].status = "FAILED";
+      conversations.refresh();
+    }
+  }
+}
+
+void openCameraPicker(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title:  Text("Take Photo",style: TextStyle(
+                    color: MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                  ),),
+              onTap: () {
+                //Navigator.pop(context);
+                pickCameraPhoto();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title:  Text("Record Video",style: TextStyle(
+                    color: MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                  ),),
+              onTap: () {
+                //Navigator.pop(context);
+                pickCameraVideo();
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+Future<void> pickCameraPhoto() async {
+  final XFile? file = await _picker.pickImage(
+    source: ImageSource.camera,
+    imageQuality: 100,
+  );
+
+  if (file == null) return;
+
+  await _handleCameraMedia(file);
+}
+Future<void> pickCameraVideo() async {
+  final XFile? file = await _picker.pickVideo(
+    source: ImageSource.camera,
+    maxDuration: const Duration(minutes: 2),
+  );
+
+  if (file == null) return;
+
+  await _handleCameraMedia(file);
+}
+
+Future<void> _handleCameraMedia(XFile file) async {
+  final List<XFile> selectedFiles = [file];
+  final List<dynamic> mediaPaths = [file.path];
+
+  final messageId = "${conversationId}_${uuid.v4()}";
+
+  final Map<String, dynamic> requestData = {
+    "conversationId": conversationId,
+    "messageId": messageId,
+    "replyTo": replyMessage.value?.id,
+    "receiver": replyMessage.value?.senderUUID,
+    "receiverUsername": replyMessage.value?.senderUsername,
+    "urls": replyMessage.value?.medias,
+  };
+
+  conversations.insert(
+    0,
+    Conversations(
+      id: messageId,
+      senderUUID: chatConfigController.config.prefs
+          .getInt(chatConfigController.config.id)
+          .toString(),
+      senderUsername: chatConfigController.config.prefs
+          .getString(chatConfigController.config.username),
+      medias: mediaPaths,
+      replayTo: replyMessage.value,
+      status: "SEND",
+      uploadProgress: 0.0.obs,
+      isUploading: true.obs,
+    ),
+  );
+
+  conversations.refresh();
+  replyMessage.value = null;
+
+  await sendAttachmentWithProgress(
+    requestData: requestData,
+    files: selectedFiles,
+    messageId: messageId,
+  );
+}
+
+
+  Future<void> pickMediaFromCamera({required bool isCamera}) async {
+  final XFile? file = await _picker.pickImage(
+   source: ImageSource.camera);
+if (file==null) return;
+//final selectedFiles = files.take(5).toList();
+//   await Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (_) => MediaPreviewScreen(
+//       files: selectedFiles,
+//       onSend: () {
+//         chatController.sendImages(selectedFiles);
+//       },
+//     ),
+//   ),
+// );
+
+  // await sendAttachment(
+  //   filePath: file.path,
+  //   type: "IMAGE",
+  //   replyToMessageId: replyMessage.value!=null?replyMessage.value?.id??"":null,
+  //   reply: replyMessage.value!=null?replyMessage.value?.url!=null?replyMessage.value?.url??"":replyMessage.value?.message??"":null
+  // );
+   
+  // replyMessage.value=null;
+}
 
   Future<void> getCurrentGroupDetails()async{
     await GroupDetailRepository.groupDetails(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)??0).then((response){
@@ -133,31 +401,41 @@ groupIcon.value = response.icon??"";
     });
   }
 
-  void sendMessageWithReply() {
+void sendMessageWithReply() {
     final text = messageController.text.trim();
     if (text.isEmpty) return;
 
     final replyTo = replyMessage.value;
+    debugPrint("what is in reply2:${jsonEncode(replyTo)}");
     final encryptedText = EncryptionHelper.encryptText(text);
-    // Add your API/WebSocket call here with replyId
-    chatWebSocket.sendMessageWithReply(
-     replyTo: replyTo?.id??"",
-     receiver:replyTo?.senderUUID??"",
-     receiverUsername: replyTo?.senderUsername??"",
-     reply: replyTo?.message??"", messageId:"${conversationId}_${uuid.v4()}", message:  encryptedText,
-    );
-
-
-    // Update UI
+    final String messageId ="${conversationId}_${uuid.v4()}";
     conversations.insert(
         0,
         Conversations(
-          id: "${conversationId}_${uuid.v4()}",
+          id: messageId,
           message: text,
+           senderUUID: chatConfigController.config.prefs.getInt(chatConfigController.config.id).toString(),
           senderUsername: chatConfigController.config.prefs.getString(chatConfigController.config.username),
           replayTo: replyTo, // <-- custom field
         ));
-  conversations.refresh();
+        conversations.refresh();
+    // Add your API/WebSocket call here with replyId
+    chatWebSocket!.sendMessageWithReply(
+     replyTo: replyTo?.id??"",
+     receiver:replyTo?.senderUUID??"",
+     receiverUsername: replyTo?.senderUsername??"",
+     reply:replyTo?.message != null ?replyTo!.message??"":"",
+     urls:replyTo?.medias,
+    //   replyTo?.medias != null
+    // ? (replyTo!.medias ?? <dynamic>[])
+    // : (replyTo?.message != null ? [replyTo!.message!] : <dynamic>[]),
+      messageId:messageId, 
+     message:  encryptedText,
+    );
+
+    // Update UI
+    
+
     Future.delayed(const Duration(milliseconds: 100), () {
       if (scrollController.hasClients) {
         scrollController.animateTo(
@@ -209,7 +487,7 @@ conversations.insert(
   
 
   // Send message over WebSocket
-  chatWebSocket.sendMessage(messageId, encryptedText, int.parse(conversationId));
+  chatWebSocket!.sendMessage(messageId, encryptedText, int.parse(conversationId));
 
   // Locally add to UI
   
@@ -255,13 +533,14 @@ debugPrint("something went wrong:$e");
     if (messageController.text.trim().isNotEmpty) {
       // messages.add(messageController.text.trim());
         final encryptedText = EncryptionHelper.encryptText(messageController.text);
-      chatWebSocket.sendMessage("${conversationId}_${uuid.v4()}",
+      chatWebSocket!.sendMessage("${conversationId}_${uuid.v4()}",
           encryptedText, int.parse(conversationId));
       conversations.insert(
           0,
           Conversations(
               id: "${conversationId}_${uuid.v4()}",
               message: messageController.text,
+               senderUUID: chatConfigController.config.prefs.getInt(chatConfigController.config.id).toString(),
               senderUsername:
                   chatConfigController.config.prefs.getString(chatConfigController.config.username),
               status: "SEND"));
@@ -279,13 +558,9 @@ debugPrint("something went wrong:$e");
       if (response.conversationId != null) {
         conversationId = response.conversationId.toString();
 
-        // Reinitialize ChatWebSocketService for this conversation
-        if (Get.isRegistered<GroupChatWebSocketService>()) {
-          Get.delete<GroupChatWebSocketService>();
-        }
-        chatWebSocket = Get.put(GroupChatWebSocketService(this));
+       
 
-        chatWebSocket.connect(int.parse(conversationId));
+        chatWebSocket!.connect(int.parse(conversationId));
         debugPrint(
             "✅ Conversation created and WebSocket connected: $conversationId");
       } else {
@@ -350,6 +625,7 @@ debugPrint("something went wrong:$e");
           }
           if (page == 0) {
             conversations.assignAll(response.items ?? []);
+            debugPrint("group conversation list api called:${conversations.length}");
           } else {
             conversations.addAll(response.items ?? []);
           }
@@ -427,15 +703,15 @@ debugPrint("something went wrong:$e");
     }
     conversations.refresh();
   }
+  Future<void> disposeChat() async {
+   chatWebSocket!.disconnect();
+}
 
   @override
   onClose() {
-    chatWebSocket.disconnect();
     
-   Get.delete<GroupChatWebSocketService>(force: true);
-    Get.delete<GroupChatController>();
-    debugPrint("chat WebSocket connection closed");
-    //Get.delete<ChatController>();
+    
+ 
     super.onClose();
   }
 

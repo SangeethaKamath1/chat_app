@@ -1,11 +1,14 @@
-import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
+import 'dart:io';
+
+import 'package:amu_alumni/amu_alumni.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 
-import '../../chat/controller/chat_controller.dart';
+import '../../chat_app.dart';
+import '../controller/call_session_controller.dart';
+import '../service/call_signaling_service.dart';
 import '../service/webrtc_service.dart';
-import 'package:amu_alumni/amu_alumni.dart';
 
 class VoiceCallScreen extends StatefulWidget {
   const VoiceCallScreen({super.key});
@@ -15,49 +18,67 @@ class VoiceCallScreen extends StatefulWidget {
 }
 
 class _VoiceCallScreenState extends State<VoiceCallScreen> {
-  final ChatController chatController = Get.find<ChatController>();
-  final WebRTCService webRTCService = Get.find<WebRTCService>();
+  final CallSessionController session = Get.find<CallSessionController>();
+  final WebRTCService webrtc = Get.find<WebRTCService>();
+  final ChatWebSocketService signaling = Get.find<ChatWebSocketService>();
+
   bool _initialized = false;
-  bool fromNotification=false;
-  late bool _isCaller;
 
   @override
   void initState() {
     super.initState();
-    
-    // Determine if we're caller or callee from route arguments
-    final arguments = Get.arguments ?? {};
-    _isCaller = arguments['isCaller'] ?? false;
-     fromNotification = Get.arguments['fromNotification']??false;
-    
+
+    final args = (Get.arguments ?? {}) as Map;
+    final roomId = (args["roomId"] ?? args["callId"] ?? "").toString();
+    final isCaller = (args["isCaller"] ?? false) as bool;
+    final fromNotification = (args["fromNotification"] ?? false) as bool;
+
+    final peerId = (args["peerId"] ?? args["callerId"] ?? "").toString();
+    final peerName = (args["peerName"] ?? args["callerName"] ?? "").toString();
+
+    // ✅ default to VIDEO if not passed
+    final isVideo = (args.containsKey("isVideo") ? (args["isVideo"] as bool) : true);
+    session.isVideo.value = isVideo;
+    if (roomId.isNotEmpty) {
+      session.hydrate(
+        roomId: roomId,
+        isCaller: isCaller,
+        fromNotification: fromNotification,
+        peerId: peerId,
+        peerName: peerName,
+        isVideo: isVideo,
+      );
+    }
+
     _initializeCall();
-  
+  }
+
+  int _extractConversationIdFromRoomId(String roomId) {
+    final first = roomId.split("_").first;
+    return int.tryParse(first) ?? 0;
+  }
+
+  Future<void> _ensureSignalingReady() async {
+    final rid = session.roomId.value;
+    if (rid.isEmpty) return;
+
+    final conversationId = _extractConversationIdFromRoomId(rid);
+    if (conversationId == 0) return;
+
+    signaling.setRoom(rid);
+    signaling.connect(conversationId);
   }
 
   Future<void> _initializeCall() async {
     if (_initialized) return;
-    
-    if (_isCaller) {
-      debugPrint("📞 CALLER: Creating offer...");
-//       await Helper.setAndroidAudioConfiguration(
-//   AndroidAudioConfiguration(
-//     manageAudioFocus: true,
-//     androidAudioMode: AndroidAudioMode.inCommunication,
-//     androidAudioFocusMode: AndroidAudioFocusMode.gain,
-//     androidAudioAttributesUsageType:
-//         AndroidAudioAttributesUsageType.voiceCommunication,
-//     androidAudioAttributesContentType:
-//         AndroidAudioAttributesContentType.speech,
-//     forceHandleAudioRouting: true,
-//   ),
-// );
-      await webRTCService.createOffer();
-      webRTCService.speakerphoneService.startRingtone(isIncoming: false,);
-    } else {
-      debugPrint("📞 CALLEE: Waiting for offer from caller...");
-      // Do nothing - we'll handle the offer when it arrives via WebSocket
+
+    await _ensureSignalingReady();
+
+    if (session.isCaller.value) {
+      await webrtc.createOffer(session.isVideo.value); // ✅ offer will be VIDEO by default (session.isVideo=true)
+      webrtc.speakerphoneService.startRingtone(isIncoming: false);
     }
-    
+
     _initialized = true;
   }
 
@@ -66,70 +87,91 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Obx(() {
+        final isVideo = session.isVideo.value;
+
         return Stack(
-          alignment: Alignment.center,
           children: [
-            // Caller Info
+            // =========================
+            // VIDEO BACKGROUND (remote)
+            // =========================
+            if (isVideo)
+              Positioned.fill(
+                child: RTCVideoView(
+                  webrtc.remoteRenderer,
+                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                ),
+              )
+            else
+              Positioned.fill(
+                child: Container(color: Colors.black),
+              ),
+
+            // dark overlay for readability
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: true,
+                child: Container(color: Colors.black.withOpacity(isVideo ? 0.15 : 0.0)),
+              ),
+            ),
+
+            // =========================
+            // TOP INFO
+            // =========================
             Positioned(
-              top: 80,
+              top: 70,
               left: 0,
               right: 0,
               child: Column(
                 children: [
                   Text(
-                    chatController.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+                    session.peerName.value.isEmpty ? "Call" : session.peerName.value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _getCallStatus(),
-                    style: TextStyle(
-                      color: _getStatusColor(),
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    _isCaller ? "Caller" : "Callee",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: _getStatusColor(), fontSize: 16),
                   ),
                 ],
               ),
             ),
-            Positioned(
-              top: 150,
-              child: Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    _buildStatusRow("Connection:", 
-                      webRTCService.isConnected ? "Connected" : "Connecting...",
-                      webRTCService.isConnected ? Colors.green : Colors.orange,
-                    ),
-                    SizedBox(height: 8),
-                    _buildStatusRow("ICE State:", 
-                      webRTCService.iceConnectionState.toString().split('.').last,
-                      _getIceStateColor(webRTCService.iceConnectionState),
-                    ),
-                    SizedBox(height: 8),
-                    _buildStatusRow("Remote Audio:", 
-                      webRTCService.hasRemoteAudio ? "Receiving" : "No Audio",
-                      webRTCService.hasRemoteAudio ? Colors.green : Colors.red,
-                    ),
-                  ],
+
+            // =========================
+            // LOCAL PREVIEW (top-right)
+            // =========================
+            if (isVideo)
+              Positioned(
+                right: 14,
+                top: 120,
+                child: Container(
+                  width: 110,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: RTCVideoView(
+                    webrtc.localRenderer,
+                    mirror: true,
+                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  ),
                 ),
               ),
-            ),
 
-            // Call Controls
+            // =========================
+            // CONTROLS
+            // =========================
             Positioned(
-              bottom: 100,
               left: 0,
               right: 0,
-              child: _buildCallControls(),
+              bottom: 90,
+              child: _buildControls(isVideo: isVideo),
             ),
           ],
         );
@@ -137,70 +179,95 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     );
   }
 
-  Widget _buildStatusRow(String label, String value, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: TextStyle(color: Colors.white70, fontSize: 14)),
-        SizedBox(width: 8),
-        Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildCallControls() {
+  Widget _buildControls({required bool isVideo}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildControlButton(
-          icon: chatController.isMuted.value ? Icons.mic_off : Icons.mic,
-          color: chatController.isMuted.value ? Colors.red : Colors.white,
-          label: chatController.isMuted.value ? "Unmute" : "Mute",
-          onPressed: () {
-            chatController.isMuted.toggle();
-            webRTCService.muteAudio(chatController.isMuted.value);
+        _controlButton(
+          icon: session.isMuted.value ? Icons.mic_off : Icons.mic,
+          color: session.isMuted.value ? Colors.red : Colors.white,
+          label: session.isMuted.value ? "Unmute" : "Mute",
+          onTap: () {
+            session.isMuted.toggle();
+            webrtc.muteAudio(session.isMuted.value);
           },
         ),
-        _buildControlButton(
-          icon: chatController.isSpeakerOn.value ? Icons.volume_up : Icons.hearing,
-          color: chatController.isSpeakerOn.value ? Colors.green : Colors.white,
-          label: chatController.isSpeakerOn.value ? "Speaker" : "Earpiece",
-          onPressed: () {
-            chatController.isSpeakerOn.toggle();
-            webRTCService.setSpeakerphoneOn(chatController.isSpeakerOn.value);
+
+        // ✅ Video-only buttons (still same screen)
+        if (isVideo)
+          _controlButton(
+            icon: session.isVideoMuted.value ? Icons.videocam_off : Icons.videocam,
+            color: session.isVideoMuted.value ? Colors.red : Colors.white,
+            label: session.isVideoMuted.value ? "Cam Off" : "Cam On",
+            onTap: () {
+              final enable = session.isVideoMuted.value; // if muted -> enable
+              webrtc.setVideoEnabled(enable);
+            },
+          ),
+
+        if (isVideo)
+          _controlButton(
+            icon: Icons.cameraswitch,
+            color: Colors.white,
+            label: "Flip",
+            onTap: () async => webrtc.switchCamera(),
+          ),
+
+        _controlButton(
+          icon: session.isSpeakerOn.value ? Icons.volume_up : Icons.hearing,
+          color: session.isSpeakerOn.value ? Colors.green : Colors.white,
+          label: session.isSpeakerOn.value ? "Speaker" : "Earpiece",
+          onTap: () {
+            session.isSpeakerOn.toggle();
+            webrtc.setSpeakerphoneOn(session.isSpeakerOn.value);
           },
         ),
-        _buildControlButton(
+
+        _controlButton(
           icon: Icons.call_end,
           color: Colors.red,
           label: "End",
-          onPressed: () async {
-            await webRTCService.endCall();
-          webRTCService.speakerphoneService.stopRingtone();
-            chatController.chatWebSocket!.callEnded(chatController.roomId);
-            //Get.back();
-           fromNotification?  Get.offAll(HomeScreen()):Get.back();
-            
+          onTap: () async {
+            debugPrint("on call ende inside call screen:${session.fromNotification.value}");
+            final callId = session.roomId.value;
+            if (callId.isEmpty) return;
+
+            if (Platform.isIOS) {
+              await CallKitBridge.endCall(callId);
+            }
+
+            try {
+              if (!webrtc.isCallAccepted.value) {
+                signaling.callCancelled(callId);
+              } else {
+                signaling.callEnded(callId);
+              }
+            } catch (_) {}
+
+            await webrtc.endCall();
+            webrtc.speakerphoneService.stopRingtone();
+           // session.reset();
+            session.fromNotification.value ? Get.offAllNamed(AppRoutes.home) : Get.back();
           },
         ),
       ],
     );
   }
 
-  Widget _buildControlButton({
+  Widget _controlButton({
     required IconData icon,
     required Color color,
     required String label,
-    required VoidCallback onPressed,
+    required VoidCallback onTap,
   }) {
     return Column(
       children: [
         InkWell(
-          onTap: onPressed,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(50),
           child: Container(
-            height: 65,
-            width: 65,
+            height: 64,
+            width: 64,
             decoration: BoxDecoration(
               color: Colors.grey.shade900,
               shape: BoxShape.circle,
@@ -209,37 +276,21 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
             child: Icon(icon, color: color, size: 28),
           ),
         ),
-        SizedBox(height: 8),
-        Text(label, style: TextStyle(color: Colors.white, fontSize: 13)),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
       ],
     );
   }
-       
-   String _getCallStatus() {
-    if (webRTCService.isConnected) {
-      return "Call Connected ✅";
-    } else if (webRTCService.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) {
-      return "Connecting... 🔄";
-    } else {
-      return _isCaller ? "Calling..." : "Waiting for call...";
-    }
-  }
 
-  Color _getIceStateColor(RTCIceConnectionState state) {
-    switch (state) {
-      case RTCIceConnectionState.RTCIceConnectionStateConnected: return Colors.green;
-      case RTCIceConnectionState.RTCIceConnectionStateChecking: return Colors.orange;
-      case RTCIceConnectionState.RTCIceConnectionStateFailed: return Colors.red;
-      default: return Colors.grey;
-    }
+  String _getCallStatus() {
+    if (webrtc.isConnected) return "Connected ✅";
+    if (webrtc.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) return "Connecting... 🔄";
+    return session.isCaller.value ? "Calling..." : "Joining...";
   }
 
   Color _getStatusColor() {
-    if (webRTCService.isConnected) return Colors.green;
-    if (webRTCService.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) return Colors.orange;
+    if (webrtc.isConnected) return Colors.green;
+    if (webrtc.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) return Colors.orange;
     return Colors.grey;
   }
-
-
-
 }

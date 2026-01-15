@@ -1,6 +1,7 @@
 import 'package:chat_app/chat/chat_websocket/ping_web_socket.dart';
 import 'package:chat_app/chat/chat_websocket/subscribe_web_socket.dart';
 import 'package:chat_app/chat_app.dart';
+import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
 import 'package:chat_app/helpers.dart';
 import 'package:chat_app/src/theme/controller/chat_theme_controller.dart';
 import 'package:flutter/material.dart';
@@ -303,9 +304,15 @@ class RecentConversationScreen extends StatelessWidget {
                             chatConfigController.config.prefs.setInt(
                                 chatConfigController.config.conversationId,
                                 user.id ?? 0);
+                                   Get.delete<PingWebSocketService>(force: true);
+                            Get.put(PingWebSocketService()).connect();
+                            
                            
-                            user.type == "PRIVATE_CHAT"
-                                ? Get.toNamed(ChatAppRoutes.chat, arguments: {
+                           
+                            if(user.type == "PRIVATE_CHAT"){
+                            //    Get.delete<ChatController>();
+                            // Get.put(ChatController());
+                                 Get.toNamed(ChatAppRoutes.chat, arguments: {
                                     "name": user.peerUser?.username,
                                     // "description":user
                                     "icon": user.peerUser?.profilePicture ?? "",
@@ -319,8 +326,10 @@ class RecentConversationScreen extends StatelessWidget {
                                     conversationController.isLastPage = false;
                                     Get.put(SubscribeWebSocketService(conversationController));
                                     conversationController.search();
-                                  })
-                                : Get.toNamed(ChatAppRoutes.groupChatScreen,
+                                  });}else{
+                                    // Get.delete<GroupChatController>();
+                                    // Get.put(GroupChatController());
+                                 Get.toNamed(ChatAppRoutes.groupChatScreen,
                                     arguments: {
                                         "name": user.groupName,
                                         "icon": user.icon,
@@ -334,9 +343,8 @@ class RecentConversationScreen extends StatelessWidget {
                                     conversationController.isLastPage = false;
                                     Get.put(SubscribeWebSocketService(conversationController));
                                     conversationController.search();
-                                  });
-                                   Get.delete<PingWebSocketService>(force: true);
-                            Get.put(PingWebSocketService()).connect();
+                                  });}
+                                
                           },
                         );
                       },

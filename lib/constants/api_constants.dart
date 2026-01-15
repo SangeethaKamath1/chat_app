@@ -25,6 +25,8 @@ class ApiConstants {
    static const String currentGroupDetails="${chatService}group/";
    static const String sendMedia = "${chatService}conversation/send-media";
    static const String searchUser="https://dev.trrings.com/user-service/api/v1/user-follow/getFollower";
+   static const callRejectedOnOpen = "https://dev.trrings.com/user-service/api/v1/call/rejected";
+   static const joinGroupCall = "${baseUrl}call/";
 
   
 }

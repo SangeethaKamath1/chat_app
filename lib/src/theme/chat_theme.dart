@@ -8,7 +8,8 @@ class ChatConfig {
   final SharedPreferences prefs;
 final String token;
 final String conversationId;
-final String fcmToken;
+// final String fcmToken;
+// final String? voipToken;
 final String userId;
 final String id;
 final String username;
@@ -25,7 +26,8 @@ final Dio dioService;
     required this.token,
     required this.conversationId,
     required this.id,
-    required this.fcmToken,
+    // required this.fcmToken,
+    //  this.voipToken,
     required this.userId,
     required this.username,
     required this.dioService

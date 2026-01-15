@@ -15,6 +15,7 @@ import '../../model/reaction_list_response.dart';
 import '../../model/send_media_data_response.dart';
 import '../../model/user.dart';
 import '../../service/dio_service.dart';
+import '../components/compress_media.dart';
 
 class ChatRepository {
   static Future<CreateConversationModel> createConversation(
@@ -37,33 +38,63 @@ class ChatRepository {
   }
 
   static Future<SendMediaDataResponse> sendMedia(
-    List<XFile> mediaFiles,
-    Map<String, dynamic> requestData,
+    List<XFile> images,
+    Map<String, dynamic> data,
+    
   ) async {
     final token = chatConfigController.config.prefs
         .getString(chatConfigController.config.token);
 
-    
 
-    // ✅ request as FIELD (not MultipartFile)
-    // formData.fields.add(
-    //   MapEntry("request", jsonEncode(requestData)),
-    // );
+  
 
-  List<MultipartFile> files = await Future.wait(mediaFiles.map((file) async {
-      // Read the file as bytes
-      final fileBytes = await file.readAsBytes();
+  // List<MultipartFile> files = await Future.wait(images.map((file) async {
+  //     // Read the file as bytes
+  //     final fileBytes = await file.readAsBytes();
 
-      // Create MultipartFile object
-      return MultipartFile.fromBytes(
-        fileBytes,
-        filename: file.name,
-      );
-    }));
-    final request = {
-     "conversationId":requestData["conversationId"],
-    //  "replyTo":requestData["replyTo"],
-     "messageId":requestData["messageId"]
+  //     // Create MultipartFile object
+  //     return MultipartFile.fromBytes(
+  //       fileBytes,
+  //       filename: file.name,
+  //     );
+  //   }));
+List<MultipartFile> files = await Future.wait(
+  images.map((file) async {
+    XFile finalFile = file;
+
+    /// 🔹 Compress first
+    try {
+      if (isVideo(file)) {
+        final compressedVideo = await compressVideo(file);
+        if (compressedVideo != null) {
+          finalFile = XFile(compressedVideo.path);
+        }
+      } else {
+        final compressedImage = await compressImage(file);
+        if (compressedImage != null) {
+          finalFile = compressedImage;
+        }
+      }
+    } catch (_) {
+      // fallback to original file
+      finalFile = file;
+    }
+
+    /// 🔹 Then read bytes (same as before)
+    final fileBytes = await finalFile.readAsBytes();
+
+    return MultipartFile.fromBytes(
+      fileBytes,
+      filename: finalFile.name,
+    );
+  }),
+);
+
+    final requestData = {
+     "conversationId":data["conversationId"],
+    "replyTo":data["replyTo"],
+     "messageId":data["messageId"],
+     "urls":data["urls"]
     };
     log('Encoded JSON: $requestData');
 
@@ -71,7 +102,7 @@ class ChatRepository {
 
  final formData = FormData.fromMap({
       'request': MultipartFile.fromString(
-        json.encode(request),
+        json.encode(requestData),
         contentType: MediaType('application', 'json'),
       ),
       'files': files,
@@ -185,5 +216,91 @@ class ChatRepository {
     } on DioException {
       throw Exception("Something went wrong");
     }
+  }
+
+    static Future<SendMediaDataResponse> sendMediaWithProgress(
+    List<XFile> images,
+    Map<String, dynamic> data, {
+    required Function(double progress) onProgress,
+  }) async {
+    final token = chatConfigController.config.prefs
+        .getString(chatConfigController.config.token);
+
+    // Compress and prepare files
+    List<MultipartFile> files = await Future.wait(
+      images.map((file) async {
+        XFile finalFile = file;
+
+        /// 🔹 Compress first
+        try {
+          if (isVideo(file)) {
+            final compressedVideo = await compressVideo(file);
+            if (compressedVideo != null) {
+              finalFile = XFile(compressedVideo.path);
+            }
+          } else {
+            final compressedImage = await compressImage(file);
+            if (compressedImage != null) {
+              finalFile = compressedImage;
+            }
+          }
+        } catch (_) {
+          // fallback to original file
+          finalFile = file;
+        }
+
+        /// 🔹 Then read bytes
+        final fileBytes = await finalFile.readAsBytes();
+
+        return MultipartFile.fromBytes(
+          fileBytes,
+          filename: finalFile.name,
+        );
+      }),
+    );
+
+    final requestData = {
+      "conversationId": data["conversationId"],
+      "replyTo": data["replyTo"],
+      "messageId": data["messageId"],
+      "urls": data["urls"],
+      "receiverUsername":data["receiverUsername"],
+      "receiver":data["receiver"]
+
+    };
+    
+    log('Encoded JSON: $requestData');
+
+    final formData = FormData.fromMap({
+      'request': MultipartFile.fromString(
+        json.encode(requestData),
+        contentType: MediaType('application', 'json'),
+      ),
+      'files': files,
+    });
+
+    // ✅ Make request with progress tracking
+    final response = await chatConfigController.config.dioService.post(
+      ApiConstants.sendMedia,
+      data: formData,
+      onSendProgress: (sent, total) {
+        if (total != -1) {
+          final progress = sent / total;
+          onProgress(progress);
+          log('📤 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      },
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      return SendMediaDataResponse.fromJson(response.data);
+    }
+
+    throw Exception("Something went wrong");
   }
 }

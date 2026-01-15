@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:amu_alumni/utils/reusables/sized_box.dart';
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
+import 'package:chat_app/chat_app.dart';
 import 'package:chat_app/constants/app_constant.dart';
 
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -9,8 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../audio_call/controller/call_session_controller.dart';
 import '../audio_call/screens/call_screen.dart';
-import '../audio_call/controller/jitsi_call_controller.dart';
 
 import '../audio_call/service/webrtc_service.dart';
 import '../routes/chat_app_routes.dart';
@@ -22,22 +24,34 @@ import 'controller/chat_controller.dart';
 import 'helpers/encryption_helper.dart';
 
 class ChatScreen extends StatelessWidget {
-   ChatScreen({super.key});
- final ChatController chatController = Get.isRegistered<ChatController>()
-        ? Get.find<ChatController>()
-        : Get.put(ChatController());
+  ChatScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final ChatController chatController = Get.find<ChatController>();
+
    
 
     return WillPopScope(
       onWillPop: () async {
         Get.back();
+        //chatController.disposeChat();
         chatController.removeReactionOverlay();
         return true;
       },
       child: Scaffold(
         appBar: AppBar(
+          leading: InkWell(
+            onTap: () {
+              Get.back();
+             // chatController.disposeChat();
+              chatController.removeReactionOverlay();
+            },
+            child: Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+            ),
+          ),
           title: Row(
             children: [
               CircleAvatar(
@@ -78,32 +92,207 @@ class ChatScreen extends StatelessWidget {
             InkWell(
               onTap: () async {
                 try {
-                  // 1. Request microphone permission
+                  // 1) Ask microphone permission
                   final micStatus = await Permission.microphone.request();
+
                   if (micStatus.isDenied) {
                     Get.snackbar(
                         "Permission Required", "Allow microphone access");
                     return;
                   }
 
-                  // 2. Generate room ID
-                  chatController.roomId =
+                  if (micStatus.isPermanentlyDenied) {
+                    await Get.dialog(
+                      AlertDialog(
+                        title: const Text("Microphone Permission"),
+                        content: const Text(
+                          "Microphone permission is permanently denied. Please enable it from Settings to make calls.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Get.back();
+                              await openAppSettings();
+                            },
+                            child: const Text("Open Settings"),
+                          ),
+                        ],
+                      ),
+                    );
+                    return;
+                  }
+
+
+                  chatController.chatWebSocket.roomId =
                       "${chatController.conversationId}_${chatController.uuid.v4()}";
 
-                  debugPrint(
-                      "Starting call with room: ${chatController.roomId}");
+                  debugPrint("📞 Starting call with room: ${chatController.chatWebSocket.roomId}");
 
-                  // 4. Navigate to call screen as CALLER
-                  Get.toNamed(ChatAppRoutes.callScreen,
-                      arguments: {'isCaller': true});
+                  chatController.chatWebSocket.setRoom(chatController.chatWebSocket.roomId);
 
-                  // 5. DO NOT call _initializeCall() here - it will be called in VoiceCallScreen
+                  final conversationIdInt =
+                      int.tryParse(chatController.conversationId) ?? 0;
+                  if (conversationIdInt != 0) {
+                    chatController.chatWebSocket.connect(conversationIdInt);
+                  } else {
+                    debugPrint(
+                        "⚠️ conversationId invalid, signaling connect skipped");
+                  }
+                //  chatController.disposeChat();
+                  final session = Get.isRegistered<CallSessionController>()
+                      ? Get.find<CallSessionController>()
+                      : Get.put(CallSessionController(), permanent: true);
+                  // session.reset();
+                  session.isVideo.value = false;
+                  // 5) Navigate to call screen as CALLER
+                  Get.toNamed(
+                    ChatAppRoutes.callScreen,
+                    arguments: {
+                      'isCaller': true,
+                      'callId': chatController.chatWebSocket.roomId,
+                      'fromNotification': false,
+                      'callerName': chatController.name,
+                      'callerId': chatController.userId,
+                      'isVideo': false
+                    },
+                  )?.then((value) {
+                    chatController.chatWebSocket!.connect(
+                        int.tryParse(chatController.conversationId) ?? 0);
+                  });
+
+                  // ✅ Do NOT call _initializeCall() here (kept same)
                 } catch (e) {
                   debugPrint("Error starting call: $e");
                   Get.snackbar("Call Failed", "Could not start call");
                 }
               },
               child: const Icon(Icons.call),
+            ),
+            sw10,
+            InkWell(
+              onTap: () async {
+                try {
+                  // 1) Ask microphone permission
+                  final micStatus = await Permission.microphone.request();
+
+                  if (micStatus.isDenied) {
+                    Get.snackbar(
+                        "Permission Required", "Allow microphone access");
+                    return;
+                  }
+
+                  if (micStatus.isPermanentlyDenied) {
+                    await Get.dialog(
+                      AlertDialog(
+                        title: const Text("Microphone Permission"),
+                        content: const Text(
+                          "Microphone permission is permanently denied. Please enable it from Settings to make calls.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Get.back();
+                              await openAppSettings();
+                            },
+                            child: const Text("Open Settings"),
+                          ),
+                        ],
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ✅ 2) Ask camera permission (for VIDEO CALL)
+                  final camStatus = await Permission.camera.request();
+
+                  if (camStatus.isDenied) {
+                    Get.snackbar("Permission Required",
+                        "Allow camera access for video calls");
+                    return;
+                  }
+
+                  if (camStatus.isPermanentlyDenied) {
+                    await Get.dialog(
+                      AlertDialog(
+                        title: const Text("Camera Permission"),
+                        content: const Text(
+                          "Camera permission is permanently denied. Please enable it from Settings to make video calls.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Get.back();
+                              await openAppSettings();
+                            },
+                            child: const Text("Open Settings"),
+                          ),
+                        ],
+                      ),
+                    );
+                    return;
+                  }
+
+                 
+
+                  // 3) Generate room ID (same as your existing logic)
+                  chatController.chatWebSocket.roomId =
+                      "${chatController.conversationId}_${chatController.uuid.v4()}";
+
+                  debugPrint("📞 Starting call with room: ${chatController.chatWebSocket.roomId}");
+
+                  chatController.chatWebSocket.setRoom(chatController.chatWebSocket.roomId);
+
+                  final conversationIdInt =
+                      int.tryParse(chatController.conversationId) ?? 0;
+                  if (conversationIdInt != 0) {
+                    chatController.chatWebSocket.connect(conversationIdInt);
+                  } else {
+                    debugPrint(
+                        "⚠️ conversationId invalid, signaling connect skipped");
+                  }
+
+                 // chatController.disposeChat();
+
+                  final session = Get.isRegistered<CallSessionController>()
+                      ? Get.find<CallSessionController>()
+                      : Get.put(CallSessionController(), permanent: true);
+
+                  // session.reset();
+                  session.isVideo.value = true;
+
+                  // 5) Navigate to call screen as CALLER
+                  Get.toNamed(
+                    ChatAppRoutes.callScreen,
+                    arguments: {
+                      'isCaller': true,
+                      'callId': chatController.chatWebSocket.roomId,
+                      'fromNotification': false,
+                      'callerName': chatController.name,
+                      'callerId': chatController.userId,
+                      'isVideo': true,
+                    },
+                  )?.then((value) {
+                    chatController.chatWebSocket!.connect(
+                        int.tryParse(chatController.conversationId) ?? 0);
+                  });
+                } catch (e) {
+                  debugPrint("Error starting call: $e");
+                  Get.snackbar("Call Failed", "Could not start call");
+                }
+              },
+              child: const Icon(Icons.video_call),
             ),
             const SizedBox(width: 16),
             Obx(() {
@@ -118,9 +307,11 @@ class ChatScreen extends StatelessWidget {
                       icon: const Icon(Icons.delete),
                       onPressed: () {
                         chatController.removeReactionOverlay();
-                        debugPrint("deleteindex:${chatController.chatIndex.value}");
-                        chatController.chatWebSocket!
-                            .deleteMessage(chatController.messageId.value);
+                        debugPrint(
+                            "deleteindex:${chatController.chatIndex.value}");
+                        chatController.chatWebSocket!.deleteMessage(
+                            chatController.messageId.value,
+                            chatController.chatIndex.value);
                       },
                     )
                   : const SizedBox.shrink();
@@ -157,6 +348,7 @@ class ChatScreen extends StatelessWidget {
                     onTap: () {
                       // clear highlight when tapping outside
                       chatController.chatIndex.value = -1;
+                      debugPrint("chat controller -1 inside global tap");
                       chatController.removeReactionOverlay();
                       chatController.messageId.value = "";
                     },
@@ -164,6 +356,7 @@ class ChatScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 0.0),
                       child: ListView.builder(
                         reverse: true,
+                        // key: ValueKey(DateTime.now().millisecond),
                         controller: chatController.scrollController,
                         clipBehavior: Clip.none,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -266,6 +459,8 @@ class ChatScreen extends StatelessWidget {
                               chatController.conversations.refresh();
                               chatController.messageController.clear();
                               chatController.chatIndex.value = -1;
+                              debugPrint(
+                                  "chat controller -1 inside emoji picker");
                               chatController.messageId.value = "";
                               chatController.showEmojiPicker.value = false;
                             } else {
@@ -316,20 +511,20 @@ class ChatScreen extends StatelessWidget {
           Row(
             children: [
               IconButton(
-  icon: const Icon(Icons.attach_file),
-  onPressed: () {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => AttachmentBottomSheet(
-        chatController: chatController,
-      ),
-    );
-  },
-),
-
+                icon: const Icon(Icons.attach_file),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (_) => AttachmentBottomSheet(
+                      chatController: chatController,
+                    ),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.add_reaction, color: Colors.orange),
                 onPressed: () {
@@ -408,6 +603,7 @@ class ChatScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _fallback() {
     return Container(
       width: 40,
@@ -416,130 +612,173 @@ class ChatScreen extends StatelessWidget {
       child: const Icon(Icons.image, size: 20),
     );
   }
+
   // 🧱 Reply Preview Bar
-Widget _buildReplyPreview(ChatController chatController, replyMsg) {
-  final bool hasText =
-      replyMsg.message != null && replyMsg.message!.trim().isNotEmpty;
+  Widget _buildReplyPreview(ChatController chatController, replyMsg) {
+    final bool hasText =
+        replyMsg.message != null && replyMsg.message!.trim().isNotEmpty;
 
-  final List<String> medias = replyMsg.medias ?? [];
-  final bool hasSingleMedia = medias.length == 1;
-  final bool hasMultipleMedia = medias.length > 1;
+    final List<dynamic> medias = replyMsg.medias ?? [];
+    final bool hasSingleMedia = medias.length == 1;
+    final bool hasMultipleMedia = medias.length > 1;
 
-  Widget _buildMediaThumb(String path) {
-    if (path.startsWith('http')) {
-      return Image.network(
-        path,
+    bool _isVideo(String path) {
+      final lower = path.toLowerCase();
+      return lower.endsWith('.mp4') ||
+          lower.endsWith('.mov') ||
+          lower.endsWith('.avi') ||
+          lower.endsWith('.mkv') ||
+          lower.endsWith('.webm');
+    }
+
+    Widget _fallback() {
+      return Container(
         width: 40,
         height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallback(),
+        color: Colors.grey[400],
+        child: const Icon(Icons.image, size: 20),
       );
     }
-    return Image.file(
-      File(path),
-      width: 40,
-      height: 40,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _fallback(),
+
+    Widget _buildMediaThumb(String path) {
+      final bool isVideo = _isVideo(path);
+
+      Widget imageWidget;
+      if (path.startsWith('http')) {
+        imageWidget = Image.network(
+          path,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _fallback(),
+        );
+      } else {
+        imageWidget = Image.file(
+          File(path),
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _fallback(),
+        );
+      }
+
+      if (!isVideo) return imageWidget;
+
+      /// 🎥 Video thumbnail with play icon
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          imageWidget,
+          Container(
+            width: 40,
+            height: 40,
+            color: Colors.black26,
+          ),
+          const Icon(
+            Icons.play_circle_fill,
+            color: Colors.white,
+            size: 20,
+          ),
+        ],
+      );
+    }
+
+    final bool singleIsVideo =
+        hasSingleMedia && _isVideo(medias.first.toString());
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          // Left color bar
+          Container(
+            width: 4,
+            height: 44,
+            decoration: BoxDecoration(
+              color: chatConfigController.config.primaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          /// ✅ Single media preview (image / video)
+          if (hasSingleMedia)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: _buildMediaThumb(medias.first),
+            ),
+
+          if (hasSingleMedia) const SizedBox(width: 8),
+
+          // Text content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sender name
+                Text(
+                  replyMsg.senderUsername ?? "Unknown",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: chatConfigController.config.primaryColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 2),
+
+                /// ✅ Multiple media
+                if (hasMultipleMedia)
+                  Text(
+                    "Replying to ${replyMsg.senderUsername}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  )
+
+                /// ✅ Text reply
+                else if (hasText)
+                  Text(
+                    replyMsg.message!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  )
+
+                /// ✅ Single media label
+                else
+                  Text(
+                    singleIsVideo ? "🎥 Video" : "📷 Photo",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: chatController.clearReply,
+          ),
+        ],
+      ),
     );
   }
-
-
-
-  return Container(
-    padding: const EdgeInsets.all(8),
-    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.grey[200],
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      children: [
-        // Left color bar
-        Container(
-          width: 4,
-          height: 44,
-          decoration: BoxDecoration(
-            color: chatConfigController.config.primaryColor,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        /// ✅ CASE 2: Single media → show thumbnail
-        if (hasSingleMedia)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: _buildMediaThumb(medias.first),
-          ),
-
-        if (hasSingleMedia) const SizedBox(width: 8),
-
-        // Text content
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sender name
-              Text(
-                replyMsg.senderUsername ?? "Unknown",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: chatConfigController.config.primaryColor,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 2),
-
-              /// ✅ CASE 3: Multiple media
-              if (hasMultipleMedia)
-                Text(
-                  "Replying to ${replyMsg.senderUsername}",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
-                )
-
-              /// ✅ CASE 1: Text message (1 line only)
-              else if (hasText)
-                Text(
-                  replyMsg.message!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
-                )
-
-              /// Fallback (single media label)
-              else
-                const Text(
-                  "📷 Photo",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        IconButton(
-          icon: const Icon(Icons.close, size: 18),
-          onPressed: chatController.clearReply,
-        ),
-      ],
-    ),
-  );
-}
-
 
   // 🧱 Handle Message Send / Reaction Send
   void _handleSend(ChatController chatController) {
