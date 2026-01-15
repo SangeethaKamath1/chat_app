@@ -26,7 +26,6 @@ export 'chat/chat_websocket/ping_web_socket.dart';
 export 'chat/chat_websocket/chat_web_socket_service.dart';
 export 'chat/listener/call_event_channel.dart';
 export 'chat/listener/call_intent_handler.dart';
-export 'group_audio_video_call/service/group_call_websocket_service.dart';
 export 'group_audio_video_call/screens/group_call_screen.dart';
 export 'chat/listener/callkit_events.dart';
 export 'chat/listener/callkit_bridge.dart';
