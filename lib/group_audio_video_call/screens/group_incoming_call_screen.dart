@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:amu_alumni/amu_alumni.dart';
+import 'package:chat_app/chat_app.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -25,6 +27,11 @@ class _GroupIncomingCallScreenState extends State<GroupIncomingCallScreen> {
   String callerName = "";
   bool isVideo = false;
 
+  Timer? _autoDismissTimer;
+  bool _handled = false; // prevents double actions
+
+  static const int _incomingTimeoutSeconds = 30; // change as needed
+
   @override
   void initState() {
     super.initState();
@@ -33,30 +40,102 @@ class _GroupIncomingCallScreenState extends State<GroupIncomingCallScreen> {
 
     fromNotification = (args['fromNotification'] ?? false) as bool;
 
-    callId = (args["callId"] ?? "").toString();
+    callId = (args["callID"] ?? "").toString();
     callerId = (args["callerId"] ?? "").toString();
     callerName = (args["callerName"] ?? "Group Call").toString();
     isVideo = (args["isVideo"] ?? false) as bool;
 
-    groupSocket =Get.isRegistered<GroupChatWebSocketService>()? Get.find<GroupChatWebSocketService>():Get.put(GroupChatWebSocketService());
+    groupSocket = Get.isRegistered<GroupChatWebSocketService>()
+        ? Get.find<GroupChatWebSocketService>()
+        : Get.put(GroupChatWebSocketService());
+
     speakerSvc = Get.find<SpeakerphoneService>();
 
     debugPrint("📲 [GROUP_INCOMING] init callId=$callId caller=$callerName video=$isVideo");
 
-    // Ensure callId stored BEFORE any navigation
-    groupSocket.roomId.value = callId;
+    // Ensure callId stored
+    groupSocket.callID.value = callId;
 
-    // Optional: ensure websocket connected for this conversation (if needed)
-   groupSocket.ensureConnectedFromRoomId(callId);
+    // Ensure websocket connected
+    groupSocket.ensureConnectedFromRoomId(callId);
 
     // Start ringtone only if not from notification
     if (!fromNotification) {
       speakerSvc.startRingtone(isIncoming: true);
     }
+
+    // ✅ Auto-dismiss timer
+    _startAutoDismissTimer();
+  }
+
+  void _startAutoDismissTimer() {
+    _autoDismissTimer?.cancel();
+    _autoDismissTimer = Timer(const Duration(seconds: _incomingTimeoutSeconds), () async {
+      if (_handled) return;
+      _handled = true;
+
+      debugPrint("⏳ [GROUP_INCOMING] Timeout ($_incomingTimeoutSeconds s) -> auto dismiss callId=$callId");
+
+      await speakerSvc.stopRingtone();
+
+      if (Platform.isIOS) {
+        await CallKitBridge.dismissIncoming(callId);
+      }
+
+      // Optional: notify server "missed" (only if you have/need it)
+      // groupSocket.emitGroupCallMissed(callId: callId);
+
+      if (!mounted) return;
+      fromNotification ? Get.offAllNamed(AppRoutes.home) : Get.back();
+    });
+  }
+
+  Future<void> _handleReject() async {
+    if (_handled) return;
+    _handled = true;
+    _autoDismissTimer?.cancel();
+
+    debugPrint("❌ [GROUP_INCOMING] Reject pressed callId=$callId");
+    await speakerSvc.stopRingtone();
+
+    if (Platform.isIOS) {
+      await CallKitBridge.dismissIncoming(callId);
+    }
+
+    if (!mounted) return;
+    fromNotification ? Get.offAllNamed(AppRoutes.home) : Get.back();
+  }
+
+  Future<void> _handleAccept() async {
+    if (_handled) return;
+    _handled = true;
+    _autoDismissTimer?.cancel();
+
+    debugPrint("✅ [GROUP_INCOMING] Accept pressed callId=$callId");
+    // await speakerSvc.stopRingtone();
+
+    groupSocket.callID.value = callId;
+
+    if (Platform.isIOS) {
+      await CallKitBridge.acceptCallFromApp(callId);
+    }
+
+    //groupSocket.emitGroupCallAccepted(callId: callId);
+
+    if (!mounted) return;
+    Get.offNamed(
+      ChatAppRoutes.groupCallScreen,
+      arguments: {
+        "isCaller": false,
+        "callID": callId,
+        "isVideo": isVideo,
+      },
+    );
   }
 
   @override
   void dispose() {
+    _autoDismissTimer?.cancel();
     speakerSvc.stopRingtone();
     super.dispose();
   }
@@ -90,10 +169,14 @@ class _GroupIncomingCallScreenState extends State<GroupIncomingCallScreen> {
                     isVideo ? "Incoming group video call..." : "Incoming group audio call...",
                     style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Auto closing in $_incomingTimeoutSeconds seconds",
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
                 ],
               ),
             ),
-
             Positioned(
               bottom: 120,
               left: 0,
@@ -105,47 +188,13 @@ class _GroupIncomingCallScreenState extends State<GroupIncomingCallScreen> {
                     icon: Icons.call_end,
                     color: Colors.red,
                     label: "Reject",
-                    onPressed: () async {
-                      debugPrint("❌ [GROUP_INCOMING] Reject pressed callId=$callId");
-                      await speakerSvc.stopRingtone();
-
-                      // Tell caller you rejected (implement in your group socket service)
-                      // groupSocket.emitGroupCallRejected(callId: callId);
-
-                      // If you use CallKit / notifications on iOS, dismiss here if needed
-                      // if (Platform.isIOS) await CallKitBridge.dismissIncoming(callId);
-
-                      fromNotification ? Get.offAllNamed(AppRoutes.home) : Get.back();
-                    },
+                    onPressed: () => _handleReject(),
                   ),
-
                   _actionButton(
                     icon: Icons.call,
                     color: Colors.green,
                     label: "Accept",
-                    onPressed: () async {
-                      debugPrint("✅ [GROUP_INCOMING] Accept pressed callId=$callId");
-                      await speakerSvc.stopRingtone();
-
-                      // Make sure roomId is set
-                      groupSocket.roomId.value = callId;
-
-                      // Optional: ensure socket connected
-                      // groupSocket.ensureConnectedFromRoomId(callId);
-
-                      // Notify caller you accepted (implement in your group socket service)
-                      groupSocket.emitGroupCallAccepted(callId: callId);
-
-                      // Now go to actual group call screen (this will join LiveKit)
-                      Get.offNamed(
-                        ChatAppRoutes.groupCallScreen,
-                        arguments: {
-                          "isCaller": false,
-                          "callId": callId, // ✅ pass explicitly
-                          "isVideo": isVideo,
-                        },
-                      );
-                    },
+                    onPressed: () => _handleAccept(),
                   ),
                 ],
               ),

@@ -62,7 +62,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
     signaling.setRoom(roomId);
     signaling.ensureConnectedFromRoomId(roomId);
-debugPrint("from notification:${fromNotification}");
+debugPrint("from notification:${fromNotification},${isVideo}");
     if (!fromNotification) {
       webrtc.speakerphoneService.startRingtone(isIncoming: true);
     }
@@ -138,6 +138,7 @@ debugPrint("from notification:${fromNotification}");
                     color: Colors.green,
                     label: "Accept",
                     onPressed: () async {
+                      debugPrint("on accept:${session.isVideo.value}");
                       webrtc.speakerphoneService.stopRingtone();
                       // await webrtc.activateCallAudioSession();
 
@@ -148,7 +149,7 @@ debugPrint("from notification:${fromNotification}");
                         await CallKitBridge.acceptCallFromApp(roomId);
                       }
 
-                      // ✅ Apply offer. WebRTCService auto-detects video from SDP ("m=video")
+                      // ✅ Apply offer. WebRTCService auto-detects video from SDP ("m=video")group
                       await webrtc
                           .handleOffer(RTCSessionDescription(sdp, offerType));
                     

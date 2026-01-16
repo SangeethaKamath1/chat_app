@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:amu_alumni/amu_alumni.dart';
+import 'package:chat_app/chat_app.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -19,59 +23,124 @@ class _GroupAudioCallScreenState extends State<GroupCallScreen> {
 
   bool _joined = false;
    bool isCaller=false;
+    bool fromNotification = false;
+
+  String callId = "";
+  bool isVideo = false;
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
 
-   final args = (Get.arguments ?? {}) as Map;
-final isCaller = (args["isCaller"] ?? false) as bool;
+  debugPrint("group call initstate:${Get.arguments}");
 
-// ✅ prefer explicit callId
-final callId = (args["callId"] as String?) ?? groupCallWebSocket.roomId.value;
-    debugPrint("📞 GroupCallScreen callId: ${groupCallWebSocket.roomId.value}, isCaller=$isCaller");
+  final args = (Get.arguments ?? {}) as Map;
 
-    // Tell LiveKit service who we are (caller/callee) for ringtone stop logic
-    svc.setRole(isCaller: isCaller);
+  isCaller = (args["isCaller"] ?? false) as bool;
+  isVideo = (args["isVideo"] ?? false) as bool;
+  fromNotification = (args['fromNotification'] ?? false) as bool;
 
-    // ✅ Start tone immediately on entering screen
+  // ✅ Prefer explicit callId
+  callId = (args["callID"] as String?) ?? groupCallWebSocket.callID.value;
+
+  debugPrint(
+    "📞 GroupCallScreen callId=$callId socketCallId=${groupCallWebSocket.callID.value}",
+  );
+
+  // ─────────────────────────────────────────────
+  // ✅ ENSURE GROUP SOCKET CONNECTED (KEY PART)
+  // ─────────────────────────────────────────────
+  groupCallWebSocket.callID.value = callId;
+  groupCallWebSocket.ensureConnectedFromRoomId(callId);
+
+  // Tell LiveKit service who we are
+  svc.setRole(isCaller: isCaller);
+
+  // Start ringtone only for caller
+  if (isCaller) {
     _startTone();
-
-    // ✅ Join LiveKit
-    _join(callId);
   }
+
+  // Join LiveKit
+  _join(callId);
+
+  // No-answer timeout (caller only)
+  if (isCaller) {
+    svc.startNoAnswerTimeout(
+      callId: callId,
+      seconds: 30,
+      onTimeout: () async {
+        if (mounted) {
+          fromNotification
+              ? Get.offAllNamed(AppRoutes.home)
+              : Get.back();
+        }
+      },
+    );
+  }
+}
 
   Future<void> _startTone() async {
     try {
       // Caller => outgoing (ringback), Callee => incoming ringtone
-      await speakerSvc.startRingtone(isIncoming: !isCaller);
+      await speakerSvc.startRingtone(isIncoming: false);
     } catch (e) {
       debugPrint("❌ startRingtone error: $e");
     }
   }
 
-  Future<void> _join(callId) async {
-    if (_joined) return;
-    _joined = true;
+Future<void> _join(String callId) async {
+  debugPrint("══════════════════════════════════════════════");
+  debugPrint("📞 [GROUP_JOIN_UI] _join() called");
+  debugPrint("📌 callId = $callId");
+  debugPrint("📌 _joined(before) = $_joined");
+  debugPrint("══════════════════════════════════════════════");
 
-    try {
-      await svc.joinGroupAudio(callId);
-    } catch (e) {
-      _joined = false;
+  if (_joined) {
+    debugPrint("⚠️ [GROUP_JOIN_UI] Already joined, skipping join()");
+    return;
+  }
 
-      // ✅ Stop tone if join fails
-      await speakerSvc.stopRingtone();
+  if (callId.trim().isEmpty) {
+    debugPrint("❌ [GROUP_JOIN_UI] callId is EMPTY ❌ join cancelled");
+    return;
+  }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Join failed: $e')),
-        );
-      }
+  _joined = true;
+  debugPrint("✅ [GROUP_JOIN_UI] _joined set to true, calling svc.joinGroupAudio()...");
+
+  try {
+    await svc.joinGroupAudio(callId);
+    debugPrint("✅ [GROUP_JOIN_UI] svc.joinGroupAudio() SUCCESS callId=$callId");
+  } catch (e, st) {
+    _joined = false;
+
+    debugPrint("❌ [GROUP_JOIN_UI] svc.joinGroupAudio() FAILED callId=$callId");
+    debugPrint("❌ Error: $e");
+    debugPrint("🧵 Stack: $st");
+
+    // ✅ Stop tone if join fails
+    debugPrint("🔕 [GROUP_JOIN_UI] Stopping ringtone due to join failure...");
+    await speakerSvc.stopRingtone();
+
+    if (mounted) {
+      debugPrint("📢 [GROUP_JOIN_UI] Showing SnackBar for join failure");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Join failed: $e')),
+      );
+    } else {
+      debugPrint("⚠️ [GROUP_JOIN_UI] Widget not mounted, SnackBar skipped");
     }
   }
 
+  debugPrint("══════════════════════════════════════════════");
+  debugPrint("📞 [GROUP_JOIN_UI] _join() END callId=$callId _joined=$_joined");
+  debugPrint("══════════════════════════════════════════════");
+}
+
   @override
   void dispose() {
+    svc.stopNoAnswerTimeout();
     // ✅ Ensure ringtone stops no matter what
     speakerSvc.stopRingtone();
     super.dispose();
@@ -150,9 +219,20 @@ final callId = (args["callId"] as String?) ?? groupCallWebSocket.roomId.value;
                       label: "Leave",
                       color: Colors.red,
                       onTap: () async {
+                        debugPrint("group call leave pressed:${callId},${groupCallWebSocket.callID.value}");
                         await speakerSvc.stopRingtone();
+                        debugPrint("group call perticipants:${svc.participants.length},${svc.activeSpeakerSids.length},${svc.anyRemoteJoined}");
+               if (isCaller && !svc.anyRemoteJoined) {
+  groupCallWebSocket.emitGroupCallCancelled(callId: callId);
+} else {
+  groupCallWebSocket.emitGroupCallLeft(callId: callId);
+}
+                       if (Platform.isIOS) {
+              await CallKitBridge.endCall(callId);
+            }
+                      
+                        fromNotification ? Get.offAllNamed(AppRoutes.home) : Get.back();
                         await svc.leaveGroupAudio();
-                        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
                       },
                     ),
                   ],

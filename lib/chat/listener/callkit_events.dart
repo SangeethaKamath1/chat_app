@@ -41,17 +41,15 @@ class CallKitEvents {
     }
   }
 
-  
-
   static void init() {
     _ch.setMethodCallHandler((call) async {
       final args = (call.arguments as Map?)?.cast<String, dynamic>() ?? {};
       final callId = args["call_id"]?.toString() ?? "";
       final callerId = args["caller_id"]?.toString() ?? "";
       final callerName = args["caller_name"]?.toString() ?? "";
-      final isVideo = args['isVideo']?.toString()??"false";
+      final isVideo = args['isVideo']?.toString() ?? "false";
       const offerType = "offer";
-      final isGroup = args["is_group"]?.toString()??"false";
+      final isGroup = args["is_group"]?.toString() ?? "false";
 
       // ✅ WebRTC
       final webrtc = Get.isRegistered<WebRTCService>()
@@ -62,11 +60,11 @@ class CallKitEvents {
       final signaling = Get.isRegistered<ChatWebSocketService>()
           ? Get.find<ChatWebSocketService>()
           : Get.put(ChatWebSocketService());
-          final session=  Get.isRegistered<CallSessionController>()
-        ? Get.find<CallSessionController>()
-        : Get.put(CallSessionController(), permanent: true);
+      final session = Get.isRegistered<CallSessionController>()
+          ? Get.find<CallSessionController>()
+          : Get.put(CallSessionController(), permanent: true);
 // session.reset();
-session.isVideo.value =isVideo ==  "true"?true:false;
+      session.isVideo.value = isVideo == "true" ? true : false;
 
       // ✅ conversationId from callId
       final conversationId = _extractConversationIdFromCallId(callId);
@@ -83,81 +81,93 @@ session.isVideo.value =isVideo ==  "true"?true:false;
       }
 
       if (call.method == "onCallAccepted") {
-        if(isGroup == "true"){
-          final GroupChatWebSocketService groupSocket = Get.isRegistered<GroupChatWebSocketService>()?
-          Get.find<GroupChatWebSocketService>():Get.put(GroupChatWebSocketService());
+        if (isGroup == "true") {
+          final GroupChatWebSocketService groupSocket =
+              Get.isRegistered<GroupChatWebSocketService>()
+                  ? Get.find<GroupChatWebSocketService>()
+                  : Get.put(GroupChatWebSocketService());
           groupSocket.ensureConnectedFromRoomId(callId);
-          final SpeakerphoneService speakerSvc = Get.find<SpeakerphoneService>();
-   await speakerSvc.stopRingtone();
+          // final SpeakerphoneService speakerSvc =
+          //     Get.find<SpeakerphoneService>();
+          // await speakerSvc.stopRingtone();
 
-                      // Make sure roomId is set
-                      groupSocket.roomId.value = callId;
+          // Make sure roomId is set
+          groupSocket.callID.value = callId;
 
-                      // Optional: ensure socket connected
-                      // groupSocket.ensureConnectedFromRoomId(callId);
+          // Optional: ensure socket connected
+          // groupSocket.ensureConnectedFromRoomId(callId);
 
-                      // Notify caller you accepted (implement in your group socket service)
-                      groupSocket.emitGroupCallAccepted(callId: callId);
+          // Notify caller you accepted (implement in your group socket service)
+        //  groupSocket.emitGroupCallAccepted(callId: callId);
 
-                      // Now go to actual group call screen (this will join LiveKit)
-                      Get.offNamed(
-                        ChatAppRoutes.groupCallScreen,
-                        arguments: {
-                          "isCaller": false,
-                          "callId": callId, // ✅ pass explicitly
-                          "isVideo": isVideo,
-                        },
-                      );
-}else{
-        debugPrint("📞 [CallKit] onCallAccepted received");
-        debugPrint(
-            "📞 callId=$callId callerId=$callerId callerName=$callerName");
-
-        try {
-          debugPrint("🔄 Fetching SDP from backend...");
-          final sdp = await fetchsdpFromApi(callId);
-          debugPrint("✅ SDP fetched (len=${sdp.length})");
-
-          webrtc.speakerphoneService.stopRingtone();
-
-
-          // ✅ Apply offer -> WebRTCService will create/send answer via signaling
-           await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
-            //  signaling.callAccepted(callId);
-
-          // ✅ Navigate (no ChatController here)
+          // Now go to actual group call screen (this will join LiveKit)
           Get.offNamed(
-            ChatAppRoutes.callScreen,
+            ChatAppRoutes.groupCallScreen,
             arguments: {
-              "fromNotification": true,
               "isCaller": false,
-              "callId": callId,
-              "callerId": callerId,
-              "callerName": callerName,
-              "sdp": sdp,
-              "offerType": offerType,
-              'isVideo':session.isVideo.value
+              "fromNotification": true,
+              "callID": callId, // ✅ pass explicitly
+              "isVideo": isVideo == "true"?true:false,
             },
           );
-        } catch (e, st) {
-          debugPrint("❌ ERROR in onCallAccepted: $e");
-          debugPrint("$st");
-        }}
+        } else {
+          debugPrint("📞 [CallKit] onCallAccepted received");
+          debugPrint(
+              "📞 callId=$callId callerId=$callerId callerName=$callerName");
+
+          try {
+            debugPrint("🔄 Fetching SDP from backend...");
+            final sdp = await fetchsdpFromApi(callId);
+            debugPrint("✅ SDP fetched (len=${sdp.length})");
+
+            webrtc.speakerphoneService.stopRingtone();
+
+            // ✅ Apply offer -> WebRTCService will create/send answer via signaling
+            await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
+            //  signaling.callAccepted(callId);
+
+            // ✅ Navigate (no ChatController here)
+            Get.offNamed(
+              ChatAppRoutes.callScreen,
+              arguments: {
+                "fromNotification": true,
+                "isCaller": false,
+                "callId": callId,
+                "callerId": callerId,
+                "callerName": callerName,
+                "sdp": sdp,
+                "offerType": offerType,
+                'isVideo': session.isVideo.value
+              },
+            );
+          } catch (e, st) {
+            debugPrint("❌ ERROR in onCallAccepted: $e");
+            debugPrint("$st");
+          }
+        }
       }
 
       if (call.method == "onCallRejected") {
         debugPrint("📞 [CallKit] onCallRejected received: callId=$callId");
-               
 
         try {
-          webrtc.speakerphoneService.stopRingtone();
-          await webrtc.endCall();
+          if (isGroup == "true") {
+            final SpeakerphoneService speakerSvc =
+                Get.find<SpeakerphoneService>();
+            await speakerSvc.stopRingtone();
+            if (Get.currentRoute.contains('groupIncomingCallScreen')) {
+              Get.back();
+            }
+          } else {
+            webrtc.speakerphoneService.stopRingtone();
+            await webrtc.endCall();
 
-          // ✅ notify other side
-          signaling.callRejected(callId);
+            // ✅ notify other side
+            signaling.callRejected(callId);
 
-          if (Get.currentRoute.contains('incomingCall')) {
-            Get.back();
+            if (Get.currentRoute.contains('incomingCall')) {
+              Get.back();
+            }
           }
         } catch (e, st) {
           debugPrint("❌ ERROR in onCallRejected: $e");

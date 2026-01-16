@@ -283,8 +283,12 @@ class ChatWebSocketService extends GetxService{
       // answer/candidate/call_ended/call_cancelled/call_rejected/call_accepted handled in CallSignalingService
     }, onDone: () {
       debugPrint("🔴 CHAT WS closed");
+      _isConnecting = false;
+  channel = null;
     }, onError: (e) {
       debugPrint("🔴 CHAT WS error: $e");
+      _isConnecting = false;
+  channel = null;
       // keep your reconnect logic if you already had it
       connect(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId) ?? 0);
     });

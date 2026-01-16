@@ -26,7 +26,7 @@ import 'helpers/encryption_helper.dart';
 class ChatScreen extends StatelessWidget {
   ChatScreen({super.key});
 
-  @override
+@override
   Widget build(BuildContext context) {
     final ChatController chatController = Get.find<ChatController>();
 
@@ -35,7 +35,7 @@ class ChatScreen extends StatelessWidget {
     return WillPopScope(
       onWillPop: () async {
         Get.back();
-        //chatController.disposeChat();
+        chatController.disposeChat();
         chatController.removeReactionOverlay();
         return true;
       },
@@ -44,7 +44,7 @@ class ChatScreen extends StatelessWidget {
           leading: InkWell(
             onTap: () {
               Get.back();
-             // chatController.disposeChat();
+             chatController.disposeChat();
               chatController.removeReactionOverlay();
             },
             child: Icon(
