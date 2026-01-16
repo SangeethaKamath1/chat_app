@@ -90,10 +90,10 @@ class GroupChatController extends GetxController {
   void onInit() {
     super.onInit();
    
-    name.value = Get.arguments['name'].toString();
-    conversationId = Get.arguments['conversationId'].toString();
-    status.value = Get.arguments['status'].toString();
-    groupIcon.value =Get.arguments['icon'].toString();
+    name.value = Get.arguments['name']?.toString()??"";
+    conversationId = Get.arguments['conversationId']?.toString()??"";
+    status.value = Get.arguments['status']?.toString()??"";
+    groupIcon.value =Get.arguments['icon']?.toString()??"";
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{
@@ -103,7 +103,7 @@ class GroupChatController extends GetxController {
       getCurrentGroupDetails();
     getConversationsList();
       
-      chatWebSocket!.connect(int.parse(conversationId));
+      chatWebSocket.connect(int.parse(conversationId));
 
       // //  chatWebSocket = Get.put(ChatWebSocketService(this));
 

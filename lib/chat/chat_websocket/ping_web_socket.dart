@@ -12,6 +12,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
 import '../../audio_call/screens/incoming_call_screen.dart';
+import '../../audio_call/service/speakerphone_service.dart';
 import '../../chat_app.dart';
 import 'group_chat_web_socket_service.dart';
 
@@ -47,6 +48,7 @@ class PingWebSocketService extends FullLifeCycleController
 
   void connect() async {
     try {
+      debugPrint("ping socket token:${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}");
       debugPrint(
           "fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}&type=ping")}");
       channel = IOWebSocketChannel.connect(
@@ -75,7 +77,7 @@ class PingWebSocketService extends FullLifeCycleController
             "sdp": offerData['sdp'],
             "offerType": offerData['type'],
             "fromNotification": false,
-            "isVideo":isVideo
+            "isVideo": isVideo
           });
         } else if (data["type"] == "candidate") {
           final candidateData = data["candidate"];
@@ -88,23 +90,23 @@ class PingWebSocketService extends FullLifeCycleController
               candidateData['sdpMid'] ?? '0',
               candidateData['sdpMLineIndex'] is int
                   ? candidateData['sdpMLineIndex']
-                  : int.tryParse(candidateData['sdpMLineIndex']?.toString() ?? '0') ?? 0,
+                  : int.tryParse(
+                          candidateData['sdpMLineIndex']?.toString() ?? '0') ??
+                      0,
             ),
           );
-        }
-        else if (data["type"] == "call_rejected") {
+        } else if (data["type"] == "call_rejected") {
           final callId = data["callID"]?.toString() ?? "";
           final callerName = data["senderUsername"] ?? "Unknown";
           debugPrint("📞 Call rejected by $callerName - callId=$callId");
 
           webRTCService.speakerphoneService.stopRingtone();
           await webRTCService.endCall();
-            Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
+          Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
           if (Get.currentRoute.contains('call')) {
             Get.back();
           }
-        }
-         else if (data["type"] == "call_cancelled") {
+        } else if (data["type"] == "call_cancelled") {
           final roomId = data["callID"];
           debugPrint("📞 Call ended - Room: $roomId");
           final webRTCService = Get.isRegistered<WebRTCService>()
@@ -149,25 +151,35 @@ class PingWebSocketService extends FullLifeCycleController
           } else {
             Get.offAllNamed(AppRoutes.home);
           }
-        }else if(data["type"]=="group_call_started"){
-            final signaling = Get.isRegistered<GroupChatWebSocketService>()
-        ? Get.find<GroupChatWebSocketService>()
-        : Get.put(GroupChatWebSocketService(), permanent: true);
-                   final callId = data["callID"];
-                   
-                     
-
-
-  Get.toNamed(
-    ChatAppRoutes.groupIncomingCallScreen,
-    arguments: {
-      "callId": callId,
-      "callerId": data["callerId"],       // if you send it
-      "callerName": data["callerName"],   // if you send it
-      "isVideo": data["isVideo"] ?? false,
-      "fromNotification": false,
-    },
-  );
+        } else if (data["type"] == "group_call_started") {
+          final signaling = Get.isRegistered<GroupChatWebSocketService>()
+              ? Get.find<GroupChatWebSocketService>()
+              : Get.put(GroupChatWebSocketService(), permanent: true);
+           final callId = data["callID"];
+debugPrint("group call callid inside ping:${callId}");
+          Get.toNamed(
+            ChatAppRoutes.groupIncomingCallScreen,
+            arguments: {
+              "callID": callId,
+              "callerId": data["callerId"], // if you send it
+              "callerName": data["callerName"], // if you send it
+              "isVideo": data["isVideo"] ?? false,
+              "fromNotification": false,
+            },
+          );
+        } else if (data["type"] == "group_call_cancelled") {
+          final roomId = data["callID"];
+          debugPrint("📞 Call ended - Room: $roomId");
+          final SpeakerphoneService speakerSvc =
+              Get.find<SpeakerphoneService>();
+          await speakerSvc.stopRingtone();
+        // final GroupChatWebSocketService chatSocket = Get.isRegistered<GroupChatWebSocketService>()?
+        // Get.find<GroupChatWebSocketService>():Get.put(GroupChatWebSocketService());
+        // chatSocket.hasOngoingCall=false.obs;
+          // Navigate back only if we're on a call scree
+          if (Get.currentRoute.contains('groupIncomingCallScreen')) {
+            Get.offNamed(AppRoutes.home);
+          }
         }
       }, onDone: () {
         debugPrint("✅ ping WebSocket connection closed onDone");

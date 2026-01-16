@@ -39,6 +39,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     // ✅ default to VIDEO if not passed
     final isVideo = (args.containsKey("isVideo") ? (args["isVideo"] as bool) : true);
     session.isVideo.value = isVideo;
+    debugPrint("inside call screen${session.isVideo.value},${(args.containsKey("isVideo"))==true}");
     if (roomId.isNotEmpty) {
       session.hydrate(
         roomId: roomId,

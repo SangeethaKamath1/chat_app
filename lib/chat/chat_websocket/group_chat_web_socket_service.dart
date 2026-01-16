@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:amu_alumni/amu_alumni.dart';
 import 'package:chat_app/group/group_chat/controller/group_chat_controller.dart';
 import 'package:chat_app/group_audio_video_call/service/livekit_group_audio_service.dart';
 
@@ -10,6 +12,7 @@ import 'package:get/get.dart';
 
 import 'package:web_socket_channel/io.dart';
 
+import '../../audio_call/service/speakerphone_service.dart';
 import '../../chat_app.dart';
 import '../../constants/api_constants.dart';
 import '../../constants/app_constant.dart';
@@ -19,16 +22,22 @@ import '../../model/conversation_list.dart';
 import '../controller/chat_controller.dart';
 import '../helpers/encryption_helper.dart';
 
-class GroupChatWebSocketService {
+class GroupChatWebSocketService extends GetxService{
   IOWebSocketChannel? channel;
 
-   GroupChatWebSocketService();
-final RxString roomId = "".obs;
+
+ 
+final RxString callID = "".obs;
   int _connectedConversationId = 0;
   bool _isConnecting = false;
+  // RxBool hasOngoingCall = false.obs;
+  // RxString ongoingCallId = "".obs;
+  // RxBool ongoingIsVideo = false.obs;
+  // RxInt ongoingParticipantsCount = 1.obs;
+   final SpeakerphoneService speakerSvc = Get.find<SpeakerphoneService>();
   void setRoom(String callId) {
-    roomId.value= callId;
-    debugPrint("🧩 CallSignalingService roomId set: $roomId");
+    callID.value= callId;
+    debugPrint("🧩 CallSignalingService roomId set: ${callID.value}");
   }
 
 static int _extractConversationIdFromCallId(String callId) {
@@ -37,7 +46,9 @@ static int _extractConversationIdFromCallId(String callId) {
   }
 
   void ensureConnectedFromRoomId(String callId) async {
+    debugPrint("ensure connected from room id is called");
     final cid = _extractConversationIdFromCallId(callId);
+debugPrint("ensure connected from room id is called:${cid}");
     if (cid == 0) {
       debugPrint("❌ ensureConnectedFromRoomId: invalid conversationId for callId=$callId");
       return;
@@ -180,23 +191,52 @@ static int _extractConversationIdFromCallId(String callId) {
           "🆕 Latest conversation: ${jsonEncode(chatController.conversations.first)}",
         );
       }
-      else if (data["type"] == "group_call_started") {
-  final callId = data["callId"];
-  roomId.value = callId;
+  //     else if (data["type"] == "group_call_started") {
+  // final callId = data["callID"];
+  // roomId.value = callId;
 
-  Get.toNamed(
-    ChatAppRoutes.groupCallScreen,
-    arguments: {"isCaller": false},
-  );
+  // Get.toNamed(
+  //   ChatAppRoutes.groupCallScreen,
+  //   arguments: {"isCaller": false},
+  // );
+// }
+else if (data["type"] == "group_call_ended") {
+  final callId = data["callID"];
+  callID.value = callId;
+  // hasOngoingCall.value=false;
+  //   hasOngoingCall.value=true;
+  // ongoingCallId.value ="";
+  // ongoingIsVideo.value=false;
+  final LiveKitGroupAudioService lg = Get.find<LiveKitGroupAudioService>();
+  if(lg.isConnected.value){
+    Platform.isIOS? CallKitBridge.dismissIncoming(callID.value):null;
+           Get.find<LiveKitGroupAudioService>().leaveGroupAudio();
+         
+
+         final nav = Get.key.currentState; // GetMaterialApp navigatorKey
+  final canGoBack = nav?.canPop() ?? false;
+  debugPrint("can go back:${canGoBack}");
+
+  if (canGoBack) {
+    Get.back();
+  } else {
+    Get.offAllNamed(AppRoutes.home);
+
+
+}}
 }
+// else if(data["type"]== "ongoing_group_call"){
+//   hasOngoingCall.value=true;
+//   ongoingCallId.value =data["callID"];
+//   ongoingIsVideo.value=data["isVideo"];
+// // ongoingParticipantsCount.value = data[]
+  
+// }
  else if (data["type"] == "group_call_accepted") {
-  final callId = data["callId"];
-  roomId.value = callId;
+  // final callId = data["callID"];
+  // roomId.value = callId;
 
-  Get.toNamed(
-    ChatAppRoutes.groupCallScreen,
-    arguments: {"isCaller": false},
-  );
+  //speakerSvc.stopRingtone();
 }
 // else if (data['type'] == 'group_answer') {
 //   groupWebRTCService.handleAnswer(data['sdp']);
@@ -211,12 +251,19 @@ static int _extractConversationIdFromCallId(String callId) {
     },
   onDone: (){
       debugPrint("✅ chat WebSocket connection closed");
+       _isConnecting = false;
+  channel = null;
   },onError: (e){
+     _isConnecting = false;
+  channel = null;
    debugPrint("✅ chat WebSocket connection closed");
   });
   }
     void disconnect() {
-    channel?.sink.close(status.normalClosure);
+    try { channel?.sink.close(status.normalClosure); } catch (_) {}
+  channel = null;
+  _isConnecting = false;
+  _connectedConversationId = 0;
   }
 
     void emitGroupCallStarted({
@@ -233,6 +280,44 @@ static int _extractConversationIdFromCallId(String callId) {
 
     log("📣 [GROUP_SIGNAL] group_call_started sent callId=$callId");
   }
+
+  void emitGroupCallAccepted({required String callId}) {
+  send({
+    "type": "group_call_accepted",
+    "callID": callId,
+    "sender":chatConfigController.config.prefs.getInt(
+        chatConfigController.config.id),
+    "senderUsername":chatConfigController.config.prefs.getString(
+        chatConfigController.config.username)
+  });
+  debugPrint("✅ [GROUP_SIGNAL] group_call_accepted sent callId=$callId");
+}
+
+void emitGroupCallLeft({required String callId}) {
+  send({
+    "type": "group_call_left",
+    "callID": callId,
+    "sender":chatConfigController.config.prefs.getInt(
+        chatConfigController.config.id),
+    "senderUsername":chatConfigController.config.prefs.getString(
+        chatConfigController.config.username)
+  });
+  debugPrint("✅ [GROUP_SIGNAL] group_call_accepted sent callId=$callID");
+}
+void emitGroupCallCancelled({required String callId}) {
+  send({
+    "type": "group_call_cancelled",
+    "callID": callId,
+    "sender":chatConfigController.config.prefs.getInt(
+        chatConfigController.config.id),
+    "senderUsername":chatConfigController.config.prefs.getString(
+        chatConfigController.config.username)
+  });
+  debugPrint("✅ [GROUP_SIGNAL] group_call_accepted sent callId=$callId");
+}
+
+
+
   void send(Map<String, dynamic> payload) {
     try {
       channel?.sink.add(jsonEncode(payload));
@@ -259,13 +344,6 @@ static int _extractConversationIdFromCallId(String callId) {
         print("📤 Sent typing: $payload");
       }
     }
-void emitGroupCallAccepted({required String callId}) {
-  send({
-    "type": "group_call_accepted",
-    "callId": callId,
-  });
-  debugPrint("✅ [GROUP_SIGNAL] group_call_accepted sent callId=$callId");
-}
 
 
     void sendMessage(String messageId,String message, int conversationId){

@@ -408,6 +408,9 @@ class ChatController extends GetxController {
       messageId: msgId,
     );
   }
+    Future<void> disposeChat() async {
+   chatWebSocket.disconnect();
+}
 
   Future<void> sendAttachmentWithProgress({
     required Map<String, dynamic> requestData,
