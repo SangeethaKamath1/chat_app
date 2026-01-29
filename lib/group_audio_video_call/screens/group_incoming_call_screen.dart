@@ -117,6 +117,7 @@ class _GroupIncomingCallScreenState extends State<GroupIncomingCallScreen> {
     groupSocket.callID.value = callId;
 
     if (Platform.isIOS) {
+      debugPrint("accepted call from app is called");
       await CallKitBridge.acceptCallFromApp(callId);
     }
 

@@ -114,8 +114,8 @@ class UserSearchScreen extends StatelessWidget {
                        // user.conversationId ?? 
                         ""
                        });
-                         Get.delete<PingWebSocketService>(force: true);
-   Get.put(PingWebSocketService()).connect();
+  //                        Get.delete<PingWebSocketService>(force: true);
+  //  Get.put(PingWebSocketService()).connect();
                       },
                     );
                   },

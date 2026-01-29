@@ -30,5 +30,6 @@ export 'group_audio_video_call/screens/group_call_screen.dart';
 export 'chat/listener/callkit_events.dart';
 export 'chat/listener/callkit_bridge.dart';
 export 'package:chat_app/audio_call/service/call_signaling_service.dart';
+export 'package:chat_app/chat_user_details.dart/chat_info_screen.dart';
 
 

@@ -42,6 +42,7 @@ class ConversationListResponse {
 
 class Conversations {
   String? id;
+  String? senderId;
   String? senderUUID;
   String? senderUsername;
   String? message;
@@ -62,6 +63,7 @@ class Conversations {
   Conversations(
       {this.id,
       this.senderUUID,
+      this.senderId,
       this.senderUsername,
       this.isReacted,
       this.message,
@@ -85,6 +87,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
    return Conversations( id : json['id'],
     senderUUID : json['senderUUID'],
     senderUsername : json['senderUsername'],
+    senderId:json['senderId'],
     message : json['message'],
     status :json['status'],
     medias :json['medias'],
@@ -104,6 +107,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['id'] = this.id;
     data['senderUUID'] = this.senderUUID;
+    data['senderId']=this.senderId;
     data['senderUsername'] = this.senderUsername;
     data['message'] = this.message;
     data["medias"]=this.medias;

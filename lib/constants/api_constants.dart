@@ -1,5 +1,7 @@
 class ApiConstants {
   static const String baseUrl = "http://66.29.152.193:8106/chat-service/api/v1/";
+  static const userService = "user-service/api/v1/";
+  static const postService = "post-service/api/v1/";
   static const String pingWebsocketUrl = "ws://66.29.152.193:8106/chat-service/presence";
   static const String subscriptionWebsocketUrl = "ws://66.29.152.193:8106/chat-service/presence";
   static const String groupChatWebsocketUrl="ws://66.29.152.193:8106/chat-service/group-chat";
@@ -27,6 +29,11 @@ class ApiConstants {
    static const String searchUser="https://dev.trrings.com/user-service/api/v1/user-follow/getFollower";
    static const callRejectedOnOpen = "https://dev.trrings.com/user-service/api/v1/call/rejected";
    static const joinGroupCall = "${baseUrl}call/";
-
+   static const getUserProfile = "https://dev.trrings.com/${userService}user/getUser";
+  static const clearChat = "${baseUrl}conversation/clear/";
+  static const deleteConversation="${baseUrl}conversation/delete/";
+  static const blockUser= "https://dev.trrings.com/${userService}user/block";
+  static const unblockAccount = "https://dev.trrings.com/${userService}user/unblock";
+    static const muteUser = "https://dev.trrings.com/${postService}post/mute";
   
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -16,9 +17,14 @@ import '../../audio_call/service/speakerphone_service.dart';
 import '../../chat_app.dart';
 import 'group_chat_web_socket_service.dart';
 
-class PingWebSocketService extends FullLifeCycleController
-    with FullLifeCycleMixin {
+class PingWebSocketService extends GetxService {
   late IOWebSocketChannel channel;
+  int _retryCount = 0;
+static const int _maxRetries = 5;
+ Timer? _pingTimer;
+  Timer? _pongTimeoutTimer;
+  bool _waitingForPong = false;
+bool _isReconnecting = false;
   final webRTCService = Get.isRegistered<WebRTCService>()
       ? Get.find<WebRTCService>()
       : Get.put(WebRTCService());
@@ -26,6 +32,86 @@ class PingWebSocketService extends FullLifeCycleController
   static int _extractConversationIdFromCallId(String callId) {
     final first = callId.split("_").first;
     return int.tryParse(first) ?? 0;
+  }
+  Future<void> _retryConnect() async {
+  if (_isReconnecting) return;
+
+  if (_retryCount >= _maxRetries) {
+    debugPrint("❌ ping WebSocket max retry reached");
+    return;
+  }
+
+  _isReconnecting = true;
+  _retryCount++;
+
+  final delay = Duration(seconds: 2 * _retryCount);
+  debugPrint("🔄 ping WebSocket retry $_retryCount after ${delay.inSeconds}s");
+
+  await Future.delayed(delay);
+
+  try {
+    disconnect();
+  } catch (_) {}
+
+  connect();
+  _isReconnecting = false;
+}
+
+void _startHeartbeat() {
+    _stopHeartbeat();
+
+    // First ping will fire after 30 seconds, then every 30 seconds
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _sendPingAndWatchPong();
+    });
+  }
+
+  void _stopHeartbeat() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
+
+    _pongTimeoutTimer?.cancel();
+    _pongTimeoutTimer = null;
+
+    _waitingForPong = false;
+  }
+
+  void _sendPingAndWatchPong() {
+    try {
+      if (_waitingForPong) {
+        // We already sent a ping and haven't gotten pong yet.
+        // Let the existing timeout handle reconnection.
+        return;
+      }
+
+      final payload = {"type": "ping"};
+      channel.sink.add(jsonEncode(payload));
+      debugPrint("📤 Sent ping");
+
+      _waitingForPong = true;
+
+      _pongTimeoutTimer?.cancel();
+      _pongTimeoutTimer = Timer(const Duration(seconds: 30), () {
+        if (_waitingForPong) {
+          debugPrint("❌ Pong not received within 30s. Reconnecting...");
+          disconnect();
+          connect();
+        }
+      });
+    } catch (e) {
+      
+      debugPrint("❌ Failed to send ping: $e");
+      disconnect();
+                connect();
+
+    }
+  }
+
+  void _onPongReceived() {
+    debugPrint("📥 Received pong");
+    _waitingForPong = false;
+    _pongTimeoutTimer?.cancel();
+    _pongTimeoutTimer = null;
   }
 
   static Future<void> _ensureSignalingConnected(String callId) async {
@@ -58,9 +144,14 @@ class PingWebSocketService extends FullLifeCycleController
       debugPrint(
           "✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(chatConfigController.config.userId)}");
       debugPrint("connection success:");
+      _startHeartbeat();   
       channel.stream.listen((event) async {
         final data = jsonDecode(event);
         log("ping is connected:${data}");
+         if (data["type"] == "pong") {
+          _onPongReceived();
+          return;
+        }
         if (data["connectionStatus"] == "CONNECTED") {
           debugPrint("ping is connected:${data}");
         } else if (data["type"] == "call") {
@@ -156,7 +247,7 @@ class PingWebSocketService extends FullLifeCycleController
               ? Get.find<GroupChatWebSocketService>()
               : Get.put(GroupChatWebSocketService(), permanent: true);
            final callId = data["callID"];
-debugPrint("group call callid inside ping:${callId}");
+debugPrint("group call callid inside ping:${callId},${data["isVideo"]}");
           Get.toNamed(
             ChatAppRoutes.groupIncomingCallScreen,
             arguments: {
@@ -184,17 +275,14 @@ debugPrint("group call callid inside ping:${callId}");
       }, onDone: () {
         debugPrint("✅ ping WebSocket connection closed onDone");
       }, onError: (e) {
+        _stopHeartbeat();
         debugPrint("✅ ping WebSocket connection closed onError:$e");
-        channel = IOWebSocketChannel.connect(
-          Uri.parse(
-              "${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}&type=ping"),
-        );
+      _retryConnect();
       });
     } catch (e) {
-      channel = IOWebSocketChannel.connect(
-        Uri.parse(
-            "${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}&type=ping"),
-      );
+      _stopHeartbeat();
+      _retryConnect();
+      
 
       debugPrint("✅ ping WebSocket connection closed on catch");
     }
@@ -236,32 +324,9 @@ debugPrint("group call callid inside ping:${callId}");
 
   void disconnect() {
     debugPrint("✅ ping WebSocket connection disconnected on disconnect");
+    _stopHeartbeat();
     channel.sink.close(status.normalClosure);
   }
 
-  @override
-  void onDetached() {
-    // TODO: implement onDetached
-  }
 
-  @override
-  void onHidden() {
-    disconnect();
-    // TODO: implement onHidden
-  }
-
-  @override
-  void onInactive() {
-    // TODO: implement onInactive
-  }
-
-  @override
-  void onPaused() {
-    // TODO: implement onPaused
-  }
-
-  @override
-  void onResumed() {
-    // TODO: implement onResumed
-  }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -30,6 +31,48 @@ class GroupChatWebSocketService extends GetxService{
 final RxString callID = "".obs;
   int _connectedConversationId = 0;
   bool _isConnecting = false;
+  int _retryCount = 0;
+  bool _isReconnecting = false;
+  Timer? _pingTimer;
+  Timer? _pongTimer;
+  bool _waitingForPong=false;
+void _startHeartBeat(){
+  _stopHeartBeat();
+  _pingTimer = Timer.periodic(Duration(seconds: 30),(_){
+    _sendPing();
+  });
+}
+void _stopHeartBeat(){
+  _pingTimer= null;
+  _pingTimer?.cancel();
+  _waitingForPong=false;
+  _pongTimer = null;
+  _pongTimer?.cancel();
+
+}
+  void _sendPing(){
+    if(_waitingForPong){
+      return;
+    }
+    _waitingForPong=true;
+    try{
+       final payload = {"type": "ping"};
+      channel?.sink.add(jsonEncode(payload));
+      _pingTimer = Timer(Duration(seconds: 30),(){
+        if(_waitingForPong){
+          disconnect();
+          connect(_connectedConversationId);
+        }
+      });
+    }catch(e){
+
+      _stopHeartBeat();
+      disconnect();
+       connect(_connectedConversationId);
+          }
+
+  }
+  static const int _maxRetries = 5;
   // RxBool hasOngoingCall = false.obs;
   // RxString ongoingCallId = "".obs;
   // RxBool ongoingIsVideo = false.obs;
@@ -76,9 +119,11 @@ debugPrint("ensure connected from room id is called:${cid}");
     }
         _isConnecting = true;
     _connectedConversationId = conversationId;
-    
+    try {
     channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}&conversationId=$conversationId"));
         debugPrint("✅ [${hashCode}] group WebSocket connected");
+        _startHeartBeat();
+         _retryCount = 0;
     channel?.stream.listen((event){
        final data = jsonDecode(event);
        debugPrint("chat connection is done:$data");
@@ -202,7 +247,7 @@ debugPrint("ensure connected from room id is called:${cid}");
 // }
 else if (data["type"] == "group_call_ended") {
   final callId = data["callID"];
-  callID.value = callId;
+  callID.value = callId??"";
   // hasOngoingCall.value=false;
   //   hasOngoingCall.value=true;
   // ongoingCallId.value ="";
@@ -256,8 +301,15 @@ else if (data["type"] == "group_call_ended") {
   },onError: (e){
      _isConnecting = false;
   channel = null;
+  _stopHeartBeat();
    debugPrint("✅ chat WebSocket connection closed");
+   _handleRetry();
   });
+  } catch (e) {
+    _stopHeartBeat();
+      debugPrint("❌ GROUP WS connect exception: $e");
+      _handleRetry();
+    }
   }
     void disconnect() {
     try { channel?.sink.close(status.normalClosure); } catch (_) {}
@@ -265,6 +317,30 @@ else if (data["type"] == "group_call_ended") {
   _isConnecting = false;
   _connectedConversationId = 0;
   }
+
+  Future<void> _handleRetry() async {
+    if (_isReconnecting) return;
+    if (_retryCount >= _maxRetries) {
+      debugPrint("❌ GROUP WS max retry reached");
+      return;
+    }
+
+    _isReconnecting = true;
+    _retryCount++;
+
+    final delay = Duration(seconds: 2 * _retryCount);
+    debugPrint(
+        "🔄 GROUP WS retry $_retryCount after ${delay.inSeconds}s");
+
+    await Future.delayed(delay);
+
+    disconnect();
+    connect(_connectedConversationId);
+
+    _isReconnecting = false;
+  }
+
+
 
     void emitGroupCallStarted({
     required String callId,

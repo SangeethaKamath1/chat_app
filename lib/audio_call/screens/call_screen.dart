@@ -1,14 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:amu_alumni/amu_alumni.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
-
 import '../../chat_app.dart';
 import '../controller/call_session_controller.dart';
-import '../service/call_signaling_service.dart';
-import '../service/webrtc_service.dart';
+
 
 class VoiceCallScreen extends StatefulWidget {
   const VoiceCallScreen({super.key});
@@ -24,6 +23,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
 
   bool _initialized = false;
 
+  // ✅ TIMEOUT
+  Timer? _callTimeoutTimer;
+  static const Duration _callTimeoutDuration = Duration(seconds: 30);
+  bool _timedOut = false;
+
   @override
   void initState() {
     super.initState();
@@ -33,13 +37,22 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     final isCaller = (args["isCaller"] ?? false) as bool;
     final fromNotification = (args["fromNotification"] ?? false) as bool;
 
+final blockedCall = (args["isBlocked"] ?? false) as bool;
+final isBlockedBy = (args["isBlockedBy"]??false)as bool;
+debugPrint("is balocked inside call screen:${blockedCall},${isBlockedBy}");
     final peerId = (args["peerId"] ?? args["callerId"] ?? "").toString();
     final peerName = (args["peerName"] ?? args["callerName"] ?? "").toString();
 
     // ✅ default to VIDEO if not passed
-    final isVideo = (args.containsKey("isVideo") ? (args["isVideo"] as bool) : true);
+    final isVideo =
+        (args.containsKey("isVideo") ? (args["isVideo"] as bool) : true);
     session.isVideo.value = isVideo;
-    debugPrint("inside call screen${session.isVideo.value},${(args.containsKey("isVideo"))==true}");
+    
+    
+
+    debugPrint(
+        "inside call screen isVideo=${session.isVideo.value}, hasKey=${args.containsKey("isVideo") == true}");
+
     if (roomId.isNotEmpty) {
       session.hydrate(
         roomId: roomId,
@@ -50,8 +63,35 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
         isVideo: isVideo,
       );
     }
+   // _startCallTimeout();
+    if (blockedCall || isBlockedBy) {
+      webrtc.speakerphoneService.startRingtone(isIncoming: false);
+  // optional: show UI briefly, then exit
+  Future.delayed(const Duration(seconds: 5), () async {
+    if (!mounted) return;
+
+    try {
+      await webrtc.endCall();
+      
+    } catch (_) {}
+
+    webrtc.speakerphoneService.stopRingtone();
+
+   // Get.snackbar("Call ended", ""); // or remove if you don’t want snackbar
+    Get.back();
+  });
+
+  // ✅ IMPORTANT: don't initialize signaling or create offer
+  return;
+}
 
     _initializeCall();
+  }
+
+  @override
+  void dispose() {
+    _cancelCallTimeout();
+    super.dispose();
   }
 
   int _extractConversationIdFromRoomId(String roomId) {
@@ -70,17 +110,85 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     signaling.connect(conversationId);
   }
 
+void _startCallTimeout() {
+  debugPrint("⏱️ Call timeout started (${_callTimeoutDuration.inSeconds}s)");
+
+  _callTimeoutTimer?.cancel();
+  _timedOut = false;
+
+  _callTimeoutTimer = Timer(_callTimeoutDuration, () async {
+    debugPrint("⏱️ Call timeout fired");
+
+    if (!mounted) {
+      debugPrint("❌ Widget not mounted, aborting timeout");
+      return;
+    }
+
+    // ✅ If already connected/accepted, do nothing
+    if (webrtc.isConnected || webrtc.isCallAccepted.value) {
+      debugPrint("✅ Call already connected/accepted — timeout ignored");
+      return;
+    }
+
+    _timedOut = true;
+    debugPrint("⛔ Call timed out (no answer)");
+
+    final callId = session.roomId.value;
+    debugPrint("📞 Timeout callId: $callId");
+
+    if (callId.isNotEmpty) {
+      try {
+        debugPrint("📡 Sending callCancelled signal");
+        signaling.callCancelled(callId);
+      } catch (e) {
+        debugPrint("❌ callCancelled failed: $e");
+      }
+    }
+
+    try {
+      debugPrint("🔌 Ending WebRTC call locally");
+      await webrtc.endCall();
+    } catch (e) {
+      debugPrint("❌ endCall failed: $e");
+    }
+
+    debugPrint("🔔 Stopping ringtone");
+    webrtc.speakerphoneService.stopRingtone();
+
+    Get.snackbar("No Answer", "Call timed out");
+
+    if (session.fromNotification.value) {
+      debugPrint("🏠 Navigating to home (from notification)");
+      Get.offAllNamed(AppRoutes.home);
+    } else {
+      debugPrint("⬅️ Closing call screen");
+      Get.back();
+       //Get.offAllNamed(AppRoutes.home);
+    }
+  });
+}
+
+  void _cancelCallTimeout() {
+    _callTimeoutTimer?.cancel();
+    _callTimeoutTimer = null;
+  }
+
   Future<void> _initializeCall() async {
+    debugPrint("initialize called");
     if (_initialized) return;
 
     await _ensureSignalingReady();
 
     if (session.isCaller.value) {
-      await webrtc.createOffer(session.isVideo.value); // ✅ offer will be VIDEO by default (session.isVideo=true)
+      await webrtc.createOffer(session.isVideo.value);
       webrtc.speakerphoneService.startRingtone(isIncoming: false);
-    }
+      _startCallTimeout();
+    } 
 
     _initialized = true;
+
+    // ✅ start timeout after setup
+    //_startCallTimeout();
   }
 
   @override
@@ -89,6 +197,12 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       backgroundColor: Colors.black,
       body: Obx(() {
         final isVideo = session.isVideo.value;
+
+        // ✅ Cancel timeout once call is accepted/connected
+        if ((webrtc.isConnected || webrtc.isCallAccepted.value) && !_timedOut) {
+          _cancelCallTimeout();
+          webrtc.speakerphoneService.stopRingtone();
+        }
 
         return Stack(
           children: [
@@ -99,19 +213,22 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
               Positioned.fill(
                 child: RTCVideoView(
                   webrtc.remoteRenderer,
-                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  objectFit:
+                      RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                 ),
               )
             else
-              Positioned.fill(
-                child: Container(color: Colors.black),
+              const Positioned.fill(
+                child: ColoredBox(color: Colors.black),
               ),
 
             // dark overlay for readability
             Positioned.fill(
               child: IgnorePointer(
                 ignoring: true,
-                child: Container(color: Colors.black.withOpacity(isVideo ? 0.15 : 0.0)),
+                child: Container(
+                  color: Colors.black.withOpacity(isVideo ? 0.15 : 0.0),
+                ),
               ),
             ),
 
@@ -125,7 +242,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
               child: Column(
                 children: [
                   Text(
-                    session.peerName.value.isEmpty ? "Call" : session.peerName.value,
+                    session.peerName.value.isEmpty
+                        ? "Call"
+                        : session.peerName.value,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -160,7 +279,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
                   child: RTCVideoView(
                     webrtc.localRenderer,
                     mirror: true,
-                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                    objectFit:
+                        RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                   ),
                 ),
               ),
@@ -194,10 +314,12 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
           },
         ),
 
-        // ✅ Video-only buttons (still same screen)
+        // ✅ Video-only buttons
         if (isVideo)
           _controlButton(
-            icon: session.isVideoMuted.value ? Icons.videocam_off : Icons.videocam,
+            icon: session.isVideoMuted.value
+                ? Icons.videocam_off
+                : Icons.videocam,
             color: session.isVideoMuted.value ? Colors.red : Colors.white,
             label: session.isVideoMuted.value ? "Cam Off" : "Cam On",
             onTap: () {
@@ -229,7 +351,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
           color: Colors.red,
           label: "End",
           onTap: () async {
-            debugPrint("on call ende inside call screen:${session.fromNotification.value}");
+            debugPrint(
+                "on call end inside call screen: fromNotification=${session.fromNotification.value}");
+
+            _cancelCallTimeout();
+
             final callId = session.roomId.value;
             if (callId.isEmpty) return;
 
@@ -247,8 +373,10 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
 
             await webrtc.endCall();
             webrtc.speakerphoneService.stopRingtone();
-           // session.reset();
-            session.fromNotification.value ? Get.offAllNamed(AppRoutes.home) : Get.back();
+
+            session.fromNotification.value
+                ? Get.offAllNamed(AppRoutes.home)
+                : Get.back();
           },
         ),
       ],
@@ -285,13 +413,22 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
 
   String _getCallStatus() {
     if (webrtc.isConnected) return "Connected ✅";
-    if (webrtc.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) return "Connecting... 🔄";
+    if (webrtc.iceConnectionState ==
+        RTCIceConnectionState.RTCIceConnectionStateChecking) {
+      return "Connecting... 🔄";
+    }
+    if(webrtc.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateDisconnected){
+      return "Call ended...";
+    }
     return session.isCaller.value ? "Calling..." : "Joining...";
   }
 
   Color _getStatusColor() {
     if (webrtc.isConnected) return Colors.green;
-    if (webrtc.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateChecking) return Colors.orange;
+    if (webrtc.iceConnectionState ==
+        RTCIceConnectionState.RTCIceConnectionStateChecking) {
+      return Colors.orange;
+    }
     return Colors.grey;
   }
 }

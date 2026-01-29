@@ -14,6 +14,8 @@ import 'package:get/route_manager.dart';
 import '../add_members/chat_add_members_screen.dart';
 import '../add_members/controller/chat_add_members_binding.dart';
 import '../audio_call/screens/incoming_call_screen.dart';
+import '../chat_user_details.dart/chat_info_screen.dart';
+import '../chat_user_details.dart/controller/chat_info_binding.dart';
 import '../group/create_group/controller/create_group_binding.dart';
 import '../group/group_detail/controller/group_detail_binding.dart';
 import '../group/group_detail/group_detail_screen.dart';
@@ -40,6 +42,7 @@ class ChatAppRoutes{
   static const String incomingCallScreen ="/incomingCallScreen";
   static const String groupCallScreen ="/groupCallScreen";
   static const String groupIncomingCallScreen = '/groupIncomingCallScreen';
+  static const String chatInfoScreen = "/chatInfoScreen";
   static List<GetPage> pages=[
   // GetPage(
   //     name: login,
@@ -56,6 +59,10 @@ class ChatAppRoutes{
       name:groupChatScreen,
       page:()=>GroupChatScreen(),
       binding: GroupChatBinding()),
+      GetPage(
+      name:chatInfoScreen,
+      page:()=>ChatInfoScreen(),
+      binding: ChatInfoBinding()),
       
       GetPage(name:chat,page: ()=>ChatScreen(),
       binding: ChatBinding()),

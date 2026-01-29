@@ -27,6 +27,48 @@ class GroupChatScreen extends StatelessWidget {
     final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     final GroupChatController chatController = Get.find<GroupChatController>();
 
+void _showClearChatDialog(
+  BuildContext context,
+
+) {
+  Get.dialog(
+    AlertDialog(
+      title: const Text("Clear chat?"),
+      content: const Text(
+        "This will remove all messages from this chat.",
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () async {
+            Get.back();
+
+            try {
+              await chatController.clearChat();
+
+              /// 🔥 CLEAR LOCAL CHAT STATE
+              chatController.conversations.clear();
+              chatController.conversations.refresh();
+
+              chatController.page = 0;
+              chatController.isLastPage = false;
+
+            } catch (e) {
+              Get.snackbar("Error", "Failed to clear chat");
+            }
+          },
+          child: const Text(
+            "Clear",
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
+}
     
 
     Widget groupUserAvatar(String? profileUrl) {
@@ -118,7 +160,8 @@ debugPrint("Call id inside group chat screen:${callId}");
                     arguments: {
                       "callID": chatController.chatWebSocket.callID.value,
                       "isCaller": true,
-                      "isVideo": false
+                      "isVideo": false,
+                      "fromNotification":false
                     },
                   );
                 } catch (e) {
@@ -204,16 +247,15 @@ debugPrint("Call id inside group chat screen:${callId}");
                       "${chatController.conversationId}_${chatController.uuid.v4()}";
 
                   chatController.chatWebSocket.callID.value = callId;
-                  // chatController.chatWebSocket.emitGroupCallStarted(
-                  //     callId: chatController.chatWebSocket.callID.value,
-                  //     isVideo: true);
+              
 
                   Get.toNamed(
                     ChatAppRoutes.groupCallScreen,
                     arguments: {
-                      "callId": callId,
+                      "callID": callId,
                       "isCaller": true,
-                      "isVideo": false
+                      "isVideo": true,
+                       "fromNotification":false
                     },
                   );
                 } catch (e) {
@@ -249,6 +291,7 @@ debugPrint("Call id inside group chat screen:${callId}");
                   : const SizedBox.shrink();
             }),
             PopupMenuButton<String>(
+             
               itemBuilder: (context) => [
                 PopupMenuItem(
                   value: "info",
@@ -292,12 +335,27 @@ debugPrint("Call id inside group chat screen:${callId}");
                     debugPrint("chat controller -1 inside group tap");
                   },
                 ),
+
+                   
+    PopupMenuItem(
+      value: 'clear_chat',
+      onTap: (){
+        
+                                _showClearChatDialog(
+                                  context);
+                              
+      },
+      child: Text("Clear Chat",style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),),
+    ),
+  
                 //  PopupMenuItem(value: "Delete",
                 //  textStyle: TextStyle(color:isDark?Colors.white:Colors.black),
                 // child: Text("Delete")),
               ],
               icon: const Icon(Icons.more_vert),
             )
+         
+         
           ],
         ),
 
