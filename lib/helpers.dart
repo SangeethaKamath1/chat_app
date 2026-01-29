@@ -208,6 +208,7 @@ void showReactionOverlayForGroup({
   }
 
    String formatDate(DateTime? createdAt) {
+    debugPrint("created at inside helpers:${createdAt}");
   if (createdAt == null) return '';
 
   final now = DateTime.now();

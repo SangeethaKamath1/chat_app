@@ -707,6 +707,14 @@ debugPrint("something went wrong:$e");
    chatWebSocket!.disconnect();
 }
 
+Future<void> clearChat() async {
+  await ChatRepository.clearChat(
+    int.parse(conversationId),
+   
+  );
+   conversations.clear();
+}
+
   @override
   onClose() {
     

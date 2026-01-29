@@ -53,5 +53,39 @@ static Future<RecentConversation> recentConversationList(
   }
 }
 
+static Future<String> clearChat(
+   int conversationId
+) async {
+  debugPrint("clear chat called");
+  late final Response response;
+
+  final token = chatConfigController.config.prefs
+      .getString(chatConfigController.config.token);
+  try {
+    response = await chatConfigController.config.dioService.post(
+      "${ApiConstants.deleteConversation}$conversationId",
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
+
+    debugPrint("✅ recent conversation STATUS CODE: ${response.statusCode}");
+    debugPrint("✅ recent conversation RESPONSE DATA: ${response.data}");
+
+    if (response.statusCode == 200) {
+      debugPrint("clear chat response:${response.data["message"]}");
+      return response.data["message"];
+    }
+
+    throw Exception("Something went wrong");
+  } on DioException catch (e) {
+    debugPrint("❌ DIO ERROR: ${e.message}");
+    debugPrint("❌ ERROR RESPONSE: ${e.response?.data}");
+    throw Exception("Something went wrong");
+  }
+}
+
 
 }

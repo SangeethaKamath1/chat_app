@@ -9,8 +9,8 @@ import '../../chat/chat_websocket/subscribe_web_socket.dart';
 import '../../chat/helpers/encryption_helper.dart';
 import '../../model/recent_conversation.dart';
 
-class RecentConversationController extends FullLifeCycleController
-    with FullLifeCycleMixin {
+class RecentConversationController extends 
+    GetxController {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode(); 
   final RxBool isFetching =false.obs;
@@ -19,33 +19,31 @@ class RecentConversationController extends FullLifeCycleController
   final List<LastMessage> lastMessageList = <LastMessage>[].obs;
   RxBool isLoading = false.obs;
   bool isLastPage = false;
-late   SubscribeWebSocketService conversationService ;
-     
+  late SubscribeWebSocketService conversationService;
 
   int page = 0;
   Timer? debounce;
 
   @override
   onInit() {
-    
-     conversationService = Get.put(SubscribeWebSocketService(this));
+    debugPrint("onInit called");
+     conversationService = Get.find<SubscribeWebSocketService>();
     
       search();
        super.onInit();
   }
 
-  @override
-  void onResumed() {
-   Get.delete<SubscribeWebSocketService>();
-    conversationService = Get.put(SubscribeWebSocketService(this));
 
-
-//   debugPrint("🟢 RecentConversationController resumed — refreshing list");
-//   page = 0;
-//   isLastPage = false;
-//      conversationService = Get.put(SubscribeWebSocketService());
-   search();
+  Future<void> clearConversation(int conversationId) async {
+    debugPrint("clear chat called inside clear conversation");
+  try {
+    await RecentConversationRepository.clearChat(conversationId);
+     // your API
+    results.removeWhere((e) => e.id == conversationId);
+  } catch (e) {
+    Get.snackbar("Error", "Failed to clear chat");
   }
+}
 
 //   @override
 //   onClose(){
@@ -66,7 +64,7 @@ page ==0? isLoading.value = true:isFetching.value=true;
     if (response.items.isNotEmpty == true) {
       if (page == 0) {
         results.clear();
-        lastMessageList.clear();
+        //lastMessageList.clear();
 
         for (var item in response.items) {
           if (item.peerUser?.id != null &&
@@ -76,7 +74,7 @@ page ==0? isLoading.value = true:isFetching.value=true;
           }
           results.add(item);
           
-        lastMessageList.add(LastMessage(message:EncryptionHelper.decryptText(item.lastMessage?.message??""),createdAt: item.lastMessage?.createdAt??0,senderUUID: item.lastMessage?.senderUUID));
+       // lastMessageList.add(LastMessage(message:EncryptionHelper.decryptText(item.lastMessage?.message??""),createdAt: item.lastMessage?.createdAt??0,senderUUID: item.lastMessage?.senderUUID));
       
          
           if (item.type == "PRIVATE_CHAT") {
@@ -93,11 +91,11 @@ page ==0? isLoading.value = true:isFetching.value=true;
           }
           results.add(item); 
          
-           lastMessageList.add(LastMessage(message:EncryptionHelper.decryptText(item.lastMessage?.message??""),createdAt: item.lastMessage?.createdAt??0,senderUUID: item.lastMessage?.senderUUID)); 
+          // lastMessageList.add(LastMessage(message:EncryptionHelper.decryptText(item.lastMessage?.message??""),createdAt: item.lastMessage?.createdAt??0,senderUUID: item.lastMessage?.senderUUID)); 
         
           if (item.type == "PRIVATE_CHAT") {
             conversationService.subscribe(
-                item.id ?? 0, item.peerUser?.id ?? 0, item);
+                item.id ?? 0, item.peerUser?.id ?? 0, item,);
           }
         }
       }
@@ -139,34 +137,12 @@ page ==0? isLoading.value = true:isFetching.value=true;
   void onClose() {
     debugPrint("unsubscribe all called onClose");
     conversationService.unsubscribeAll();
-   Get.delete<SubscribeWebSocketService>();
+  // Get.delete<SubscribeWebSocketService>();
   //Get.delete<RecentConversationController>();
     // TODO: implement onClose
     super.onClose();
     //conversationService.unsubscribeAll();
   }
 
-  @override
-  void onDetached() {
-    debugPrint("unsubscribe all called onDetached");
-    //conversationService.unsubscribeAll();
-    // TODO: implement onDetached
-  }
-
-  @override
-  void onHidden() {
-    debugPrint("unsubscribe all called onHidden");
-    //conversationService.unsubscribeAll();
-    // TODO: implement onHidden
-  }
-
-  @override
-  void onInactive() {
-    // TODO: implement onInactive
-  }
-
-  @override
-  void onPaused() {
-    
-  }
+  
 }

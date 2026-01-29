@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:amu_alumni/amu_alumni.dart';
 import 'package:chat_app/constants/api_constants.dart';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:chat_app/model/conversation_list.dart';
@@ -36,6 +37,34 @@ class ChatRepository {
       throw Exception("Something went wrong");
     }
   }
+
+  static  Future<ProfileDetailsModel> getProfile(String username)async{
+  late final Response response;
+  final String token = chatConfigController.config.prefs.getString(chatConfigController.config.token)??"";
+  debugPrint("getprofile token:${token}");
+  try{
+    Dio dio = Dio();
+ final parameters = { "field": "username",
+  "value":username
+ };
+ debugPrint("parameters:${parameters}");
+    response = await dio.get(ApiConstants.getUserProfile,
+    options: Options(headers:{"Authorization":"Bearer $token"}),
+    queryParameters:parameters);
+    //final uri = Uri.parse(ApiConstants.searchUser).replace(queryParameters: parameters);
+
+//print("➡️ FINAL URL: $uri");
+    if(response.statusCode == 200){
+     return ProfileDetailsModel.fromJson(response.data);
+    }else{
+      throw Exception("Something went wrong");
+    }
+  }on DioException catch(e){
+    throw Exception("something went wrong:$e");
+  }
+
+
+}
 
   static Future<SendMediaDataResponse> sendMedia(
     List<XFile> images,
@@ -303,4 +332,37 @@ List<MultipartFile> files = await Future.wait(
 
     throw Exception("Something went wrong");
   }
+
+  static Future<String> clearChat(
+   int conversationId
+) async {
+  late final Response response;
+
+  final token = chatConfigController.config.prefs
+      .getString(chatConfigController.config.token);
+  try {
+    response = await chatConfigController.config.dioService.post(
+      "${ApiConstants.clearChat}$conversationId",
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
+
+    debugPrint("✅ STATUS CODE: ${response.statusCode}");
+    debugPrint("✅ RESPONSE DATA: ${response.data}");
+
+    if (response.statusCode == 200) {
+      debugPrint("clear chat response:${response.data["message"]}");
+      return response.data["message"];
+    }
+
+    throw Exception("Something went wrong");
+  } on DioException catch (e) {
+    debugPrint("❌ DIO ERROR: ${e.message}");
+    debugPrint("❌ ERROR RESPONSE: ${e.response?.data}");
+    throw Exception("Something went wrong");
+  }
+}
 }

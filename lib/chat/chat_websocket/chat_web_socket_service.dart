@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -12,15 +13,92 @@ import 'package:web_socket_channel/status.dart' as status;
 import '../../chat_app.dart';
 import '../../constants/api_constants.dart';
 import '../../model/conversation_list.dart';
+import '../components/user_status_event.dart';
 import '../controller/chat_controller.dart';
 import '../helpers/encryption_helper.dart';
 
-class ChatWebSocketService extends GetxService{
+class ChatWebSocketService extends GetxService {
   IOWebSocketChannel? channel;
-   
+
   int _connectedConversationId = 0;
+  Timer? _pingTimer;
+  Timer? _pongTimer;
+  int _lastConversationId = 0;
+  bool _waitingForPong = false;
+StreamSubscription<UserStatusEvent>? _statusSub;
+  void _startHeartbeat() {
+    _stopHeartBeat();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (t) {
+      _sendPingAndWatchPong();
+    });
+  }
+
+  void attachPresenceListener({
+  required int conversationId,
+  required int peerUserId,
+}) {
+  _statusSub?.cancel();
+
+  final sub = Get.find<SubscribeWebSocketService>();
+  _statusSub = sub.statusStream.listen((evt) {
+    if (evt.conversationId != conversationId) return;
+    if (evt.userId != peerUserId) return;
+
+    if (evt.online) {
+      debugPrint("is online from chat web socket:${evt.online}");
+      final chatController = Get.find<ChatController>();
+
+      // ✅ Mark pending outgoing messages as delivered (local UI)
+      chatController.updateMessageStatusToDelivered();
+
+      // ✅ If your backend requires an ACK, send it here (depends on your protocol)
+      // send({"type": "delivered_ack", "conversationId": conversationId});
+    }
+  });
+}
+
+  void _sendPingAndWatchPong() {
+    try {
+      if (_waitingForPong) {
+        return;
+      }
+      final payload = {"type": "ping"};
+      channel?.sink.add(jsonEncode(payload));
+      _waitingForPong = true;
+      _pongTimer?.cancel();
+      _pongTimer = Timer(const Duration(seconds: 30), () {
+        if (_waitingForPong) {
+          debugPrint("conversation id chat socket:${_connectedConversationId}");
+          disconnect();
+          connect(_lastConversationId);
+        }
+      });
+    } catch (e) {
+    debugPrint("conversation id chat socket:${_connectedConversationId}");
+    disconnect();
+          connect(_lastConversationId);
+    }
+  }
+  void _onPongReceived() {
+    debugPrint("📥 Received pong");
+    _waitingForPong = false;
+    _pongTimer?.cancel();
+    _pongTimer = null;
+  }
+
+  void _stopHeartBeat() {
+    _waitingForPong = false;
+    _pingTimer?.cancel();
+    _pongTimer?.cancel();
+    _pingTimer = null;
+    _pongTimer = null;
+  }
 
   String roomId = "";
+  int _retryCount = 0;
+  bool _isReconnecting = false;
+  static const int _maxRetries = 5;
+
   /// avoid multiple connects at same time
   bool _isConnecting = false;
 
@@ -39,14 +117,18 @@ class ChatWebSocketService extends GetxService{
   void ensureConnectedFromRoomId(String callId) async {
     final cid = _extractConversationIdFromCallId(callId);
     if (cid == 0) {
-      debugPrint("❌ ensureConnectedFromRoomId: invalid conversationId for callId=$callId");
+      debugPrint(
+          "❌ ensureConnectedFromRoomId: invalid conversationId for callId=$callId");
       return;
     }
     connect(cid);
   }
+
   void connect(int conversationId) {
-        if (_isConnecting) {
-      debugPrint("⏸️ CallSignalingService connect skipped (already connecting)");
+    debugPrint("conversation id inside connect:${conversationId}");
+    if (_isConnecting) {
+      debugPrint(
+          "⏸️ CallSignalingService connect skipped (already connecting)");
       return;
     }
 
@@ -54,144 +136,138 @@ class ChatWebSocketService extends GetxService{
     // But if you ever get a stale socket, you MUST reconnect.
     // We handle that by reconnecting on onDone/onError (channel=null there).
     if (channel != null && _connectedConversationId == conversationId) {
-      debugPrint("⏸️ CallSignalingService already connected (conv=$conversationId)");
+      debugPrint(
+          "⏸️ CallSignalingService already connected (conv=$conversationId)");
       return;
     }
 
     // If switching conversationId, close old channel first.
     if (channel != null && _connectedConversationId != conversationId) {
-      debugPrint("🔁 Switching signaling conversation: $_connectedConversationId -> $conversationId");
+      debugPrint(
+          "🔁 Switching signaling conversation: $_connectedConversationId -> $conversationId");
       disconnect();
     }
-        _isConnecting = true;
-    _connectedConversationId = conversationId;
-    channel = IOWebSocketChannel.connect(
-      Uri.parse(
-        "${ApiConstants.chatWebSocketService}"
-        "?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}"
-        "&conversationId=$conversationId",
-      ),
-    );
+    _isConnecting = true;
+    try {
+      _connectedConversationId = conversationId;
+      _lastConversationId = conversationId;
+      debugPrint("connected conversation id:${_connectedConversationId}");
+      channel = IOWebSocketChannel.connect(
+        Uri.parse(
+          "${ApiConstants.chatWebSocketService}"
+          "?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}"
+          "&conversationId=$conversationId",
+        ),
+      );
 
-    debugPrint("✅ [${hashCode}] CHAT WebSocket connected");
-
-    channel?.stream.listen((event) async {
-      final data = jsonDecode(event);
-      log("📡 CHAT WS event: $data");
-
-      if (data["type"] == "msg") {
-        final chatController = Get.find<ChatController>();
-        final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
-
-        Conversations? replyTo;
-        if (data["replyTo"] != null) {
-          replyTo = Conversations(
-            id: data["replyTo"] ?? "",
-            senderUUID: data["receiver"] ?? "",
-            senderUsername: data["receiverUsername"] ?? "",
-            message: data["reply"] ?? "",
-            medias: data["urls"],
-          );
+      debugPrint("✅ [${hashCode}] CHAT WebSocket connected");
+      _startHeartbeat();
+      _retryCount = 0;
+      channel?.stream.listen((event) async {
+        final data = jsonDecode(event);
+        log("📡 CHAT WS event: $data");
+        if(data["type"]=="PONG"){
+            _onPongReceived();
         }
 
-        chatController?.conversations.insert(
-          0,
-          Conversations(
-            id: data["messageId"] ?? "",
-            senderUUID: data["sender"] ?? "",
-            senderUsername: data['senderUsername'] ?? "",
-            message: decryptedMsg,
-            replayTo: replyTo,
-          ),
-        );
-
-        chatController?.conversations.refresh();
-      }
-
-      else if (data["type"] == "media") {
+       else if (data["type"] == "msg") {
           final chatController = Get.find<ChatController>();
-        final List<dynamic> mediaUrls = [];
+          final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
 
-        if (data["mediaUploadResponse"] != null) {
-          for (final item in data["mediaUploadResponse"]) {
-            if (item["success"] == true && item["url"] != null) {
-              mediaUrls.add(item["url"]);
+          Conversations? replyTo;
+          if (data["replyTo"] != null) {
+            replyTo = Conversations(
+              id: data["replyTo"] ?? "",
+              senderUUID: data["receiver"] ?? "",
+              senderUsername: data["receiverUsername"] ?? "",
+              message: data["reply"] ?? "",
+              medias: data["urls"],
+            );
+          }
+
+          chatController?.conversations.insert(
+            0,
+            Conversations(
+              id: data["messageId"] ?? "",
+              senderUUID: data["sender"] ?? "",
+              senderUsername: data['senderUsername'] ?? "",
+              message: decryptedMsg,
+              replayTo: replyTo,
+            ),
+          );
+
+          chatController?.conversations.refresh();
+        } else if (data["type"] == "media") {
+          final chatController = Get.find<ChatController>();
+          final List<dynamic> mediaUrls = [];
+
+          if (data["mediaUploadResponse"] != null) {
+            for (final item in data["mediaUploadResponse"]) {
+              if (item["success"] == true && item["url"] != null) {
+                mediaUrls.add(item["url"]);
+              }
             }
           }
-        }
 
-        Conversations? replyTo;
-        if (data["replyTo"] != null) {
-          replyTo = Conversations(
-            id: data["replyTo"] ?? "",
-            senderUUID: data["receiver"] ?? "",
-            senderUsername: data["receiverUsername"] ?? "",
-            message: data["reply"] ?? "",
-            medias: data["urls"],
+          Conversations? replyTo;
+          if (data["replyTo"] != null) {
+            replyTo = Conversations(
+              id: data["replyTo"] ?? "",
+              senderUUID: data["receiver"] ?? "",
+              senderUsername: data["receiverUsername"] ?? "",
+              message: data["reply"] ?? "",
+              medias: data["urls"],
+            );
+          }
+
+          chatController?.conversations.insert(
+            0,
+            Conversations(
+              id: data["mediaUploadResponse"][0]["messageId"] ?? "",
+              senderUUID: data["sender"] ?? "",
+              senderUsername: data['senderUsername'] ?? "",
+              medias: mediaUrls,
+              replayTo: replyTo,
+            ),
           );
-        }
 
-        chatController?.conversations.insert(
-          0,
-          Conversations(
-            id: data["mediaUploadResponse"][0]["messageId"] ?? "",
-            senderUUID: data["sender"] ?? "",
-            senderUsername: data['senderUsername'] ?? "",
-            medias: mediaUrls,
-            replayTo: replyTo,
-          ),
-        );
-
-        chatController.conversations.refresh();
-      }
-
-      else if (data["type"] == "typing") {
+          chatController.conversations.refresh();
+        } else if (data["type"] == "typing") {
           final chatController = Get.find<ChatController>();
-        chatController.isTyping.value = data["isTyping"] == "true";
-      }
-
-      else if (data["type"] == "reload") {
+          chatController.isTyping.value = data["isTyping"] == "true";
+        } else if (data["type"] == "reload") {
           final chatController = Get.find<ChatController>();
-        if (data["status"] == "DELIVERED") {
-          chatController.updateMessageStatusToDelivered();
-        } else {
+          if (data["status"] == "DELIVERED") {
+            chatController.updateMessageStatusToDelivered();
+          } else {
+            chatController.updateMessageStatusToSeen();
+          }
+          chatController.conversations.refresh();
+        } else if (data['type'] == "delete") {
+          final chatController = Get.find<ChatController>();
+          chatController.conversations.removeWhere(
+            (ele) => ele.id.toString() == data['messageId'].toString(),
+          );
+          chatController.conversations.refresh();
+        } else if (data["status"] == "DELIVERED") {
+          final chatController = Get.find<ChatController>();
+          Future.delayed(const Duration(milliseconds: 300), () {
+            chatController.updateMessageStatusById(
+              data["messageId"],
+              data["status"],
+            );
+          });
+        } else if (data["status"] == "SEEN") {
+          final chatController = Get.find<ChatController>();
           chatController.updateMessageStatusToSeen();
-        }
-        chatController.conversations.refresh();
-      }
-
-      else if (data['type'] == "delete") {
+        } else if (data["type"] == "REACTION" || data["type"] == "reaction") {
           final chatController = Get.find<ChatController>();
-        chatController.conversations.removeWhere(
-          (ele) => ele.id.toString() == data['messageId'].toString(),
-        );
-        chatController.conversations.refresh();
-      }
-
-      else if (data["status"] == "DELIVERED") {
-          final chatController = Get.find<ChatController>();
-        Future.delayed(const Duration(milliseconds: 300), () {
-          chatController.updateMessageStatusById(
+          chatController.updateReaction(
             data["messageId"],
-            data["status"],
+            data["reaction"],
+            data["oldReaction"],
           );
-        });
-      }
-
-      else if (data["status"] == "SEEN") {
-          final chatController = Get.find<ChatController>();
-        chatController.updateMessageStatusToSeen();
-      }
-
-      else if (data["type"] == "REACTION" || data["type"] == "reaction") {
-          final chatController = Get.find<ChatController>();
-        chatController.updateReaction(
-          data["messageId"],
-          data["reaction"],
-          data["oldReaction"],
-        );
-      }
-      else if (data["type"] == "call") {
+        } else if (data["type"] == "call") {
           //ensureConnectedFromRoomId(data["callID"]);
           final roomId = data["callID"];
           final callerName = data["senderUsername"] ?? "Unknown";
@@ -205,15 +281,14 @@ class ChatWebSocketService extends GetxService{
             "sdp": offerData['sdp'],
             "offerType": offerData['type'],
             "fromNotification": false,
-            "isVideo":isVideo
+            "isVideo": isVideo
           });
-        }
-      else if (data["type"] == "answer") {
+        } else if (data["type"] == "answer") {
           final answerData = data["answer"];
           final callId = data["callID"]?.toString() ?? "";
           debugPrint("📥 Received ANSWER for call: $callId");
-        webRTCService.isCallAccepted.value=true;
-        webRTCService.speakerphoneService.stopRingtone();
+          webRTCService.isCallAccepted.value = true;
+          webRTCService.speakerphoneService.stopRingtone();
           await webRTCService.handleAnswer(
             RTCSessionDescription(answerData['sdp'], answerData['type']),
           );
@@ -228,25 +303,28 @@ class ChatWebSocketService extends GetxService{
               candidateData['sdpMid'] ?? '0',
               candidateData['sdpMLineIndex'] is int
                   ? candidateData['sdpMLineIndex']
-                  : int.tryParse(candidateData['sdpMLineIndex']?.toString() ?? '0') ?? 0,
+                  : int.tryParse(
+                          candidateData['sdpMLineIndex']?.toString() ?? '0') ??
+                      0,
             ),
           );
-        } else if (data["type"] == "call_ended") {
+        }
+         else if (data["type"] == "call_ended") {
           final roomId = data["callID"]?.toString() ?? "";
           debugPrint("📞 Call ended - callId=$roomId");
-  Platform.isIOS? CallKitBridge.dismissIncoming(roomId):null;
+          Platform.isIOS ? CallKitBridge.dismissIncoming(roomId) : null;
           webRTCService.speakerphoneService.stopRingtone();
           await webRTCService.endCall();
 
-         final nav = Get.key.currentState; // GetMaterialApp navigatorKey
-  final canGoBack = nav?.canPop() ?? false;
-  debugPrint("can go back:${canGoBack}");
+          final nav = Get.key.currentState; // GetMaterialApp navigatorKey
+          final canGoBack = nav?.canPop() ?? false;
+          debugPrint("can go back:${canGoBack}");
 
-  if (canGoBack) {
-    Get.back();
-  } else {
-    Get.offAllNamed(AppRoutes.home);
-  }
+          if (canGoBack) {
+            Get.back();
+          } else {
+            Get.offAllNamed(AppRoutes.home);
+          }
         } else if (data["type"] == "call_cancelled") {
           final roomId = data["callID"]?.toString() ?? "";
           debugPrint("📞 Call cancelled - callId=$roomId");
@@ -259,18 +337,17 @@ class ChatWebSocketService extends GetxService{
           } else {
             Get.offAllNamed(AppRoutes.home);
           }
-        }else if (data["type"] == "call_accepted") {
+        } else if (data["type"] == "call_accepted") {
           final callId = data["callID"]?.toString() ?? "";
           final username = data["senderUsername"] ?? "Unknown";
           debugPrint("✅ Call accepted by $username - callId=$callId");
-            
+
           webRTCService.speakerphoneService.stopRingtone();
-        }
-         else if (data["type"] == "call_rejected") {
+        } else if (data["type"] == "call_rejected") {
           final callId = data["callID"]?.toString() ?? "";
           final callerName = data["senderUsername"] ?? "Unknown";
           debugPrint("📞 Call rejected by $callerName - callId=$callId");
-           Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
+          Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
           webRTCService.speakerphoneService.stopRingtone();
           await webRTCService.endCall();
 
@@ -279,22 +356,28 @@ class ChatWebSocketService extends GetxService{
           }
         }
 
-      // ✅ CALL EVENTS REMOVED FROM HERE
-      // answer/candidate/call_ended/call_cancelled/call_rejected/call_accepted handled in CallSignalingService
-    }, onDone: () {
-      debugPrint("🔴 CHAT WS closed");
-      _isConnecting = false;
-  channel = null;
-    }, onError: (e) {
-      debugPrint("🔴 CHAT WS error: $e");
-      _isConnecting = false;
-  channel = null;
-      // keep your reconnect logic if you already had it
-      connect(chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId) ?? 0);
-    });
+        // ✅ CALL EVENTS REMOVED FROM HERE
+        // answer/candidate/call_ended/call_cancelled/call_rejected/call_accepted handled in CallSignalingService
+      }, onDone: () {
+        debugPrint("🔴 CHAT WS done");
+        _isConnecting = false;
+        channel = null;
+      }, onError: (e) {
+        debugPrint("🔴 CHAT WS error: $e");
+        _isConnecting = false;
+        channel = null;
+        _stopHeartBeat();
+        // keep your reconnect logic if you already had it
+        _handleRetry();
+      });
+    } catch (e) {
+      _stopHeartBeat();
+      debugPrint("❌ CHAT WS connect exception: $e");
+      _handleRetry();
+    }
   }
 
-  void sendOffer(RTCSessionDescription offer,bool isVideo) {
+  void sendOffer(RTCSessionDescription offer, bool isVideo) {
     if (channel == null) {
       debugPrint("❌ sendOffer: channel is null");
       return;
@@ -303,7 +386,7 @@ class ChatWebSocketService extends GetxService{
       "type": "call",
       "offer": {"sdp": offer.sdp, "type": offer.type},
       "callID": roomId,
-      "isVideo":isVideo
+      "isVideo": isVideo
     };
     send(payload);
     log("📤 OFFER SENT: $payload");
@@ -369,7 +452,10 @@ class ChatWebSocketService extends GetxService{
       "type": "call_cancelled",
       "callID": callId,
       "conversationId": conversationId ??
-          (derivedCid != 0 ? derivedCid : chatConfigController.config.prefs.getInt(chatConfigController.config.conversationId)),
+          (derivedCid != 0
+              ? derivedCid
+              : chatConfigController.config.prefs
+                  .getInt(chatConfigController.config.conversationId)),
     });
   }
 
@@ -383,6 +469,9 @@ class ChatWebSocketService extends GetxService{
   }
 
   void disconnect() {
+    _statusSub?.cancel();
+  _statusSub = null;
+  _stopHeartBeat();
     try {
       channel?.sink.close(status.normalClosure);
     } catch (_) {}
@@ -393,7 +482,7 @@ class ChatWebSocketService extends GetxService{
 
   @override
   void onClose() {
-    disconnect();
+    // disconnect();
     super.onClose();
   }
 
@@ -410,7 +499,7 @@ class ChatWebSocketService extends GetxService{
   }
 
   void deleteMessage(String messageId, int index) {
-      final chatController = Get.find<ChatController>();
+    final chatController = Get.find<ChatController>();
     final payload = {"type": "delete", "messageId": messageId};
     channel?.sink.add(jsonEncode(payload));
 
@@ -422,6 +511,27 @@ class ChatWebSocketService extends GetxService{
     chatController.messageId.value = "";
     chatController.chatIndex.value = -1;
     chatController.showEmojiPicker.value = false;
+  }
+
+  Future<void> _handleRetry() async {
+    if (_isReconnecting) return;
+    if (_retryCount >= _maxRetries) {
+      debugPrint("❌ CHAT WS max retry reached");
+      return;
+    }
+
+    _isReconnecting = true;
+    _retryCount++;
+
+    final delay = Duration(seconds: 2 * _retryCount);
+    debugPrint("🔄 CHAT WS retry $_retryCount after ${delay.inSeconds}s");
+
+    await Future.delayed(delay);
+
+    disconnect();
+    connect(_connectedConversationId);
+
+    _isReconnecting = false;
   }
 
   void sendMessageWithReply({
@@ -448,7 +558,7 @@ class ChatWebSocketService extends GetxService{
             "replyTo": replyTo,
             "receiver": receiver,
             "receiverUsername": receiverUsername,
-            "reply": reply, 
+            "reply": reply,
             "messageId": messageId,
             "msg": message,
           };
@@ -458,8 +568,12 @@ class ChatWebSocketService extends GetxService{
   }
 
   void sendReaction(String messageId, String reaction, int conversationId) {
-      final chatController = Get.find<ChatController>();
-    final payload = {"type": "reaction", "messageId": messageId, "msg": reaction};
+    final chatController = Get.find<ChatController>();
+    final payload = {
+      "type": "reaction",
+      "messageId": messageId,
+      "msg": reaction
+    };
     channel?.sink.add(jsonEncode(payload));
 
     chatController.messageId.value = "";

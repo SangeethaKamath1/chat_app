@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:chat_app/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -6,10 +7,9 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../../chat/components/full_screen_image_viewer.dart';
 import '../../../chat/components/full_screen_single_media_viewer.dart';
 import '../../../chat/components/helpers.dart';
-import '../../../constants/app_constant.dart';
-import '../../../helpers.dart';
-import '../../../src/theme/controller/chat_theme_controller.dart';
+import '../../../chat/components/video_cache.dart';
 
+import '../../../src/theme/controller/chat_theme_controller.dart';
 import '../controller/group_chat_controller.dart';
 import 'reaction_list_bottom_sheet.dart';
 
@@ -52,7 +52,6 @@ class ChatMessageBubble extends StatelessWidget {
               onLongPressStart: (details) {
                 chatController.chatIndex.value = index;
                 chatController.messageId.value = message.id ?? "";
-                debugPrint("message id on long press: ${chatController.messageId.value}");
                 final Offset position = details.globalPosition;
 
                 showReactionOverlayForGroup(
@@ -71,7 +70,8 @@ class ChatMessageBubble extends StatelessWidget {
                     top: 4,
                     bottom: message.reactions?.isNotEmpty == true ? 22 : 4,
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                   decoration: BoxDecoration(
                     color: isMine
                         ? chatConfigController.config.primaryColor
@@ -101,7 +101,7 @@ class ChatMessageBubble extends StatelessWidget {
 
                       /// Message content (media or text)
                       if (message.medias != null && message.medias!.isNotEmpty)
-                        _buildImageMessage(context, message, isMine)
+                        _buildMediaMessage(context, message, isMine)
                       else
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -113,14 +113,12 @@ class ChatMessageBubble extends StatelessWidget {
                                   fontSize: 15,
                                   color: isMine
                                       ? Colors.white
-                                      : (isDark ? Colors.white : Colors.black54),
+                                      : (isDark
+                                          ? Colors.white
+                                          : Colors.black54),
                                 ),
                               ),
                             ),
-                            if (isMine) ...[
-                              const SizedBox(width: 6),
-                              _buildStatusIcon(message.status),
-                            ],
                           ],
                         ),
                     ],
@@ -141,16 +139,25 @@ class ChatMessageBubble extends StatelessWidget {
   // ===========================================================================
   // MEDIA MESSAGE BUILDER
   // ===========================================================================
-  Widget _buildImageMessage(
+  Widget _buildMediaMessage(
     BuildContext context,
     dynamic message,
     bool isMine,
   ) {
-    final medias = message.medias ?? [];
+    final medias = (message.medias ?? []).cast<String>();
     if (medias.isEmpty) return const SizedBox();
 
-    final bool isUploading = isMine && 
-        medias.any((m) => !m.toString().startsWith('http'));
+    // uploading if sender has local paths
+    final bool isUploading =
+        isMine && medias.any((m) => !m.toString().startsWith('http'));
+
+    // Optional: prefetch any remote video once bubble builds
+    for (final m in medias) {
+      if (m.startsWith('http') && isVideo(m)) {
+        // Fire-and-forget
+        VideoCache.prefetch(m);
+      }
+    }
 
     /// SINGLE MEDIA
     if (medias.length == 1) {
@@ -177,33 +184,18 @@ class ChatMessageBubble extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _buildSingleMediaWithProgress(
-                mediaPath,
-                isNetwork,
-                isVideoFile,
-                isMine,
-                isUploading,
+              child: _buildSingleMediaTile(
+                path: mediaPath,
+                isNetwork: isNetwork,
+                isVideoFile: isVideoFile,
+                isUploading: isUploading,
               ),
             ),
             if (isUploading)
               _buildProgressOverlay(
-                isMine,
-                isUploading,
-                message.uploadProgress?.value ?? 0.0,
-                0.0,
-              ),
-            if (isMine && !isUploading)
-              Positioned(
-                bottom: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _buildStatusIcon(message.status),
-                ),
+                isUploading: true,
+                uploadProgress: message.uploadProgress?.value ?? 0.0,
+                downloadProgress: 0.0,
               ),
           ],
         ),
@@ -220,7 +212,7 @@ class ChatMessageBubble extends StatelessWidget {
                 PageRouteBuilder(
                   opaque: false,
                   pageBuilder: (_, __, ___) => FullScreenMediaViewer(
-                    medias: medias.cast<String>(),
+                    medias: medias,
                     initialIndex: 0,
                   ),
                 ),
@@ -248,44 +240,35 @@ class ChatMessageBubble extends StatelessWidget {
           ),
           if (isUploading)
             _buildProgressOverlay(
-              isMine,
-              isUploading,
-              message.uploadProgress?.value ?? 0.0,
-              0.0,
-            ),
-          if (isMine && !isUploading)
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: _buildStatusIcon(message.status),
-              ),
+              isUploading: true,
+              uploadProgress: message.uploadProgress?.value ?? 0.0,
+              downloadProgress: 0.0,
             ),
         ],
       ),
     );
   }
 
-  Widget _buildSingleMediaWithProgress(
-    String path,
-    bool isNetwork,
-    bool isVideoFile,
-    bool isMine,
-    bool isUploading,
-  ) {
+  // ===========================================================================
+  // SINGLE MEDIA TILE (IMAGE/VIDEO THUMB) - VIDEO THUMB FROM CACHE
+  // ===========================================================================
+  Widget _buildSingleMediaTile({
+    required String path,
+    required bool isNetwork,
+    required bool isVideoFile,
+    required bool isUploading,
+  }) {
     if (isVideoFile) {
       return FutureBuilder<String?>(
-        future: VideoThumbnail.thumbnailFile(
-          video: path,
-          imageFormat: ImageFormat.JPEG,
-          maxWidth: 220,
-          quality: 75,
-        ),
+        future: () async {
+          final file = isNetwork ? await VideoCache.get(path) : File(path);
+          return VideoThumbnail.thumbnailFile(
+            video: file.path,
+            imageFormat: ImageFormat.JPEG,
+            maxWidth: 220,
+            quality: 75,
+          );
+        }(),
         builder: (context, snapshot) {
           return Stack(
             alignment: Alignment.center,
@@ -311,7 +294,7 @@ class ChatMessageBubble extends StatelessWidget {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
@@ -327,6 +310,7 @@ class ChatMessageBubble extends StatelessWidget {
       );
     }
 
+    // image
     if (isNetwork) {
       return Image.network(
         path,
@@ -350,14 +334,363 @@ class ChatMessageBubble extends StatelessWidget {
     }
   }
 
-  Widget _buildProgressOverlay(
-    bool isMine,
-    bool isUploading,
-    double uploadProgress,
-    double downloadProgress,
-  ) {
-    final progress = isUploading ? uploadProgress : downloadProgress;
+  // ===========================================================================
+  // COLLAGE (2-4) - VIDEO THUMBS FROM CACHE
+  // ===========================================================================
+  Widget _buildMediaCollage(List<String> medias) {
+    final display = medias.take(4).toList();
+    final count = display.length;
+    if (count == 0) return const SizedBox();
 
+    Widget tile(String path, int idx) {
+      final isNetwork = path.startsWith('http');
+      final isVideoFile = isVideo(path);
+
+      return InkWell(
+        onTap: () {
+          Navigator.push(
+            Get.context!,
+            PageRouteBuilder(
+              opaque: false,
+              pageBuilder: (_, __, ___) => FullScreenMediaViewer(
+                medias: medias,
+                initialIndex: idx,
+              ),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: isVideoFile
+              ? FutureBuilder<String?>(
+                  future: () async {
+                    final file =
+                        isNetwork ? await VideoCache.get(path) : File(path);
+                    return VideoThumbnail.thumbnailFile(
+                      video: file.path,
+                      imageFormat: ImageFormat.JPEG,
+                      maxHeight: 220,
+                      quality: 60,
+                    );
+                  }(),
+                  builder: (context, snapshot) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (snapshot.hasData && snapshot.data != null)
+                          Image.file(File(snapshot.data!), fit: BoxFit.cover)
+                        else
+                          Container(
+                            color: Colors.black87,
+                            child: const Center(
+                              child: Icon(
+                                Icons.videocam,
+                                size: 32,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 28,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              : isNetwork
+                  ? Image.network(path, fit: BoxFit.cover)
+                  : Image.file(File(path), fit: BoxFit.cover),
+        ),
+      );
+    }
+
+    if (count == 1) return tile(display[0], 0);
+
+    if (count == 2) {
+      return SizedBox(
+        width: 220,
+        height: 220,
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 1),
+                child: tile(display[0], 0),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 1),
+                child: tile(display[1], 1),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (count == 3) {
+      return SizedBox(
+        width: 220,
+        height: 220,
+        child: Column(
+          children: [
+            Expanded(
+              flex: 6,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 1),
+                child: tile(display[0], 0),
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 1, top: 1),
+                      child: tile(display[1], 1),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 1, top: 1),
+                      child: tile(display[2], 2),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // count == 4
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 1, bottom: 1),
+                    child: tile(display[0], 0),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 1, bottom: 1),
+                    child: tile(display[1], 1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 1, top: 1),
+                    child: tile(display[2], 2),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 1, top: 1),
+                    child: Stack(
+                      children: [
+                        tile(display[3], 3),
+                        if (medias.length > 4)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "+${medias.length - 4}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // REPLY PREVIEW
+  // ===========================================================================
+  Widget _buildReplyPreview(dynamic msg, bool isMine, bool isDark) {
+    final reply = msg.replayTo!;
+    final medias = (reply.medias ?? []).cast<String>();
+    final bool hasMedia = medias.isNotEmpty;
+    final bool hasText =
+        reply.message != null && reply.message!.trim().isNotEmpty;
+
+    return Container(
+      width: 250,
+      padding: const EdgeInsets.all(6),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: isMine
+            ? Colors.white24
+            : (isDark ? Colors.black26 : Colors.grey[200]),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isMine ? Colors.white38 : Colors.black12,
+        ),
+      ),
+      child: Row(
+        children: [
+          if (hasMedia) ...[
+            _buildReplyMediaThumb(medias.first),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reply.senderUsername ==
+                          chatConfigController.config.prefs.getString(
+                              chatConfigController.config.username)
+                      ? "You"
+                      : (reply.senderUsername ?? "Unknown"),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color:
+                        isMine ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasMedia
+                      ? (medias.length > 1
+                          ? "📷 ${medias.length} Media"
+                          : isVideo(medias.first)
+                              ? "🎥 Video"
+                              : "📷 Photo")
+                      : hasText
+                          ? reply.message!
+                          : "Message",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isMine
+                        ? Colors.white70
+                        : (isDark ? Colors.white70 : Colors.black54),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyMediaThumb(String path) {
+    final isVideoFile = isVideo(path);
+    final isNetwork = path.startsWith('http');
+
+    if (!isVideoFile) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: isNetwork
+            ? Image.network(path, width: 40, height: 40, fit: BoxFit.cover)
+            : Image.file(File(path), width: 40, height: 40, fit: BoxFit.cover),
+      );
+    }
+
+    return FutureBuilder<String?>(
+      future: () async {
+        final file = isNetwork ? await VideoCache.get(path) : File(path);
+        return VideoThumbnail.thumbnailFile(
+          video: file.path,
+          imageFormat: ImageFormat.JPEG,
+          maxHeight: 40,
+          quality: 50,
+        );
+      }(),
+      builder: (context, snapshot) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (snapshot.hasData && snapshot.data != null)
+                  Image.file(File(snapshot.data!), fit: BoxFit.cover)
+                else
+                  Container(
+                    color: Colors.black87,
+                    child: const Icon(
+                      Icons.videocam,
+                      size: 16,
+                      color: Colors.white54,
+                    ),
+                  ),
+                Center(
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    size: 20,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ===========================================================================
+  // OVERLAYS / HELPERS
+  // ===========================================================================
+  Widget _buildProgressOverlay({
+    required bool isUploading,
+    required double uploadProgress,
+    required double downloadProgress,
+  }) {
+    final progress = isUploading ? uploadProgress : downloadProgress;
     return Container(
       width: 220,
       height: 220,
@@ -392,7 +725,9 @@ class ChatMessageBubble extends StatelessWidget {
           Text(
             isUploading
                 ? (progress > 0 ? '${(progress * 100).toInt()}%' : 'Uploading...')
-                : (progress > 0 ? '${(progress * 100).toInt()}%' : 'Downloading...'),
+                : (progress > 0
+                    ? '${(progress * 100).toInt()}%'
+                    : 'Downloading...'),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12,
@@ -425,388 +760,16 @@ class ChatMessageBubble extends StatelessWidget {
         children: [
           Icon(Icons.broken_image, size: 40, color: Colors.grey),
           SizedBox(height: 8),
-          Text(
-            'Failed to load',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
+          Text('Failed to load', style: TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),
     );
-  }
-
-  Widget _buildMediaCollage(List<dynamic> medias) {
-    final display = medias.take(4).toList();
-    final count = display.length;
-
-    if (count == 0) return const SizedBox();
-
-    Widget buildImage(String path, int index) {
-      final isNetwork = path.startsWith('http');
-
-      return InkWell(
-        onTap: () {
-          Navigator.push(
-            Get.context!,
-            PageRouteBuilder(
-              opaque: false,
-              pageBuilder: (_, __, ___) => FullScreenMediaViewer(
-                medias: medias.cast<String>(),
-                initialIndex: index,
-              ),
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: isVideo(path)
-              ? FutureBuilder<String?>(
-                  future: VideoThumbnail.thumbnailFile(
-                    video: path,
-                    imageFormat: ImageFormat.JPEG,
-                    maxHeight: 220,
-                    quality: 60,
-                  ),
-                  builder: (context, snapshot) {
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (snapshot.hasData && snapshot.data != null)
-                          Image.file(
-                            File(snapshot.data!),
-                            fit: BoxFit.cover,
-                          )
-                        else
-                          Container(
-                            color: Colors.black87,
-                            child: const Center(
-                              child: Icon(
-                                Icons.videocam,
-                                size: 32,
-                                color: Colors.white54,
-                              ),
-                            ),
-                          ),
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 28,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                )
-              : isNetwork
-                  ? Image.network(path, fit: BoxFit.cover)
-                  : Image.file(File(path), fit: BoxFit.cover),
-        ),
-      );
-    }
-
-    if (count == 1) return buildImage(display[0], 0);
-
-    if (count == 2) {
-      return SizedBox(
-        width: 220,
-        height: 220,
-        child: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 1),
-                child: buildImage(display[0], 0),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 1),
-                child: buildImage(display[1], 1),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (count == 3) {
-      return SizedBox(
-        width: 220,
-        height: 220,
-        child: Column(
-          children: [
-            Expanded(
-              flex: 6,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 1),
-                child: buildImage(display[0], 0),
-              ),
-            ),
-            Expanded(
-              flex: 4,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 1, top: 1),
-                      child: buildImage(display[1], 1),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 1, top: 1),
-                      child: buildImage(display[2], 2),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (count == 4) {
-      return SizedBox(
-        width: 220,
-        height: 220,
-        child: Column(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 1, bottom: 1),
-                      child: buildImage(display[0], 0),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 1, bottom: 1),
-                      child: buildImage(display[1], 1),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 1, top: 1),
-                      child: buildImage(display[2], 2),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 1, top: 1),
-                      child: Stack(
-                        children: [
-                          buildImage(display[3], 3),
-                          if (medias.length > 4)
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    "+${medias.length - 4}",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox();
-  }
-
-  // ===========================================================================
-  // REPLY PREVIEW (update to support media)
-  // ===========================================================================
-  Widget _buildReplyPreview(message, bool isMine, bool isDark) {
-    final reply = message.replayTo!;
-    final medias = reply.medias ?? [];
-    final bool hasMedia = medias.isNotEmpty;
-    final bool hasText = reply.message != null && reply.message!.trim().isNotEmpty;
-
-    return Container(
-      width: 250,
-      padding: const EdgeInsets.all(6),
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: BoxDecoration(
-        color: isMine
-            ? Colors.white24
-            : (isDark ? Colors.black26 : Colors.grey[200]),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isMine ? Colors.white38 : Colors.black12,
-        ),
-      ),
-      child: Row(
-        children: [
-          /// Media thumbnail
-          if (hasMedia) ...[
-            _buildMediaThumbnail(medias.first),
-            const SizedBox(width: 8),
-          ],
-
-          /// Text content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reply.senderUsername ==
-                          chatConfigController.config.prefs
-                              .getString(chatConfigController.config.username)
-                      ? "You"
-                      : reply.senderUsername ?? "Unknown",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isMine
-                        ? Colors.white
-                        : isDark
-                            ? Colors.white
-                            : Colors.black87,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hasMedia
-                      ? (medias.length > 1
-                          ? "📷 ${medias.length} Media"
-                          : isVideo(medias.first)
-                              ? "🎥 Video"
-                              : "📷 Photo")
-                      : hasText
-                          ? reply.message!
-                          : "Message",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isMine
-                        ? Colors.white70
-                        : isDark
-                            ? Colors.white70
-                            : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMediaThumbnail(String path) {
-    final isVideoFile = isVideo(path);
-
-    if (isVideoFile) {
-      return FutureBuilder<String?>(
-        future: VideoThumbnail.thumbnailFile(
-          video: path,
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 40,
-          quality: 50,
-        ),
-        builder: (context, snapshot) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (snapshot.hasData && snapshot.data != null)
-                    Image.file(
-                      File(snapshot.data!),
-                      fit: BoxFit.cover,
-                    )
-                  else
-                    Container(
-                      color: Colors.black87,
-                      child: const Icon(
-                        Icons.videocam,
-                        size: 16,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  Center(
-                    child: Icon(
-                      Icons.play_circle_fill,
-                      size: 20,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: path.startsWith('http')
-          ? Image.network(path, width: 40, height: 40, fit: BoxFit.cover)
-          : Image.file(File(path), width: 40, height: 40, fit: BoxFit.cover),
-    );
-  }
-
-  // ===========================================================================
-  // STATUS ICONS
-  // ===========================================================================
-  Widget _buildStatusIcon(String? status) {
-    switch (status) {
-      case "SEND":
-        return const Icon(Icons.check, size: 17, color: Colors.white70);
-      case "DELIVERED":
-        return const Icon(Icons.done_all, size: 17, color: Colors.white70);
-      case "SEEN":
-        return const Icon(Icons.done_all, size: 17, color: Colors.lightBlue);
-      default:
-        return const Icon(Icons.check, size: 17, color: Colors.white70);
-    }
   }
 
   // ===========================================================================
   // REACTION BUBBLE
   // ===========================================================================
-  Widget _buildReactionBubble(BuildContext context, message, bool isMine) {
+  Widget _buildReactionBubble(BuildContext context, dynamic msg, bool isMine) {
     return Positioned(
       bottom: 10,
       right: isMine ? 12 : null,
@@ -822,7 +785,7 @@ class ChatMessageBubble extends StatelessWidget {
             isScrollControlled: true,
             builder: (_) => ReactionListBottomSheet(
               chatController: chatController,
-              messageId: message.id ?? "",
+              messageId: msg.id ?? "",
             ),
           );
         },
@@ -832,22 +795,16 @@ class ChatMessageBubble extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
-              BoxShadow(
-                blurRadius: 2,
-                color: Colors.black26,
-              )
+              BoxShadow(blurRadius: 2, color: Colors.black26),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: message.reactions!
+            children: (msg.reactions ?? [])
                 .map<Widget>(
                   (emoji) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    child: Text('$emoji', style: const TextStyle(fontSize: 14)),
                   ),
                 )
                 .toList(),

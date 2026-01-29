@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:amu_alumni/amu_alumni.dart';
+import 'package:amu_alumni/main.dart';
 import 'package:chat_app/chat/chat_websocket/chat_web_socket_service.dart';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:file_picker/file_picker.dart';
@@ -11,16 +13,19 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../chat_app.dart';
+import '../../chat_user_details.dart/repository/chat_info_repository.dart';
 import '../../model/conversation_list.dart';
 import '../../model/reaction_list_response.dart';
+import '../../recent_conversation/repository/recent_conversation_repository.dart';
 import '../helpers/encryption_helper.dart';
 import '../repository/chat_repository.dart';
 
-class ChatController extends GetxController {
+class ChatController extends GetxController with RouteAware {
   // ✅ CHAT IDENTIFIERS
   String userId = "";
   String name = "";
   String icon = "";
+  String userUid = "";
   
 
   String conversationId = "";
@@ -37,6 +42,9 @@ class ChatController extends GetxController {
   final RxBool isFetching = false.obs;
   final RxBool isTyping = false.obs;
   final RxString messageId = "".obs;
+  final RxBool isBlocked = false.obs;
+  final RxBool isMuted = false.obs;
+  final RxBool isBlockedBy = false.obs;
 
   final RxBool isLoading = false.obs; // conversation list loading (page==0)
   final RxBool isCreateConversationLoading = false.obs;
@@ -48,6 +56,7 @@ class ChatController extends GetxController {
 
   int reactionsPageNumber = 0;
   RxList<Reaction> reactions = <Reaction>[].obs;
+  Rx<ProfileModel> profileDetails = ProfileModel().obs;
   bool isReactionLastPage = false;
   bool isReactionLoading = false;
 
@@ -86,6 +95,14 @@ class ChatController extends GetxController {
     showEmojiPicker.value = !showEmojiPicker.value;
   }
 
+  Future<void> clearChat() async {
+  await ChatRepository.clearChat(
+    int.parse(conversationId),
+   
+  );
+   conversations.clear();
+}
+
   @override
   void onInit() {
     super.onInit();
@@ -97,9 +114,15 @@ class ChatController extends GetxController {
     final argName = args?['name']?.toString();
     final argIcon = args?['icon']?.toString();
     final argConversationId = args?['conversationId']?.toString();
+    final argsuserid = args?["useruid"]?.toString();
+    final argsisBlockedBy = args?["isBlockedBy"]??false;
 
     if (argUserId != null && argUserId.isNotEmpty) userId = argUserId;
+     if (argsuserid != null && argsuserid.isNotEmpty) userUid = argsuserid;
+          if (argsisBlockedBy != null) isBlockedBy.value = argsisBlockedBy;
+          debugPrint("is blocked by inside chat controller:${isBlockedBy.value}");
     if (argName != null && argName.isNotEmpty) name = argName;
+    getProfile();
     if (argIcon != null) icon = argIcon;
     if (argConversationId != null && argConversationId.isNotEmpty) {
       conversationId = argConversationId;
@@ -111,6 +134,11 @@ class ChatController extends GetxController {
     // ✅ If conversationId already known, connect + load
     if (conversationId.isNotEmpty) {
       chatWebSocket.connect(int.parse(conversationId));
+      chatConfigController.config.prefs.setInt(
+          chatConfigController.config.conversationId,
+          int.parse(conversationId),
+        );
+        chatWebSocket.attachPresenceListener(conversationId: int.parse(conversationId), peerUserId: int.parse(userId));
       getConversationsList();
       return;
     }
@@ -124,7 +152,71 @@ class ChatController extends GetxController {
         "Waiting for caller to set userId then call createConversation().",
       );
     }
+
   }
+@override
+void onReady() {
+  super.onReady();
+
+  /// Subscribe to route changes
+  final route = ModalRoute.of(Get.context!);
+  if (route is PageRoute) {
+    routeObserver.subscribe(this, route);
+  }
+    debugPrint("onReady called");
+
+}
+@override
+void didPush() {
+  /// First time screen opens
+  debugPrint("📌 Chat didPush");
+//getProfile();
+}
+
+@override
+void didPopNext() {
+  /// Came BACK to chat screen (THIS IS YOUR CASE)
+  debugPrint("📌 Chat didPopNext (screen resumed)");
+  getProfile();
+}
+
+  Future<String> getProfile()async{
+    debugPrint("get profile called");
+   final response =  await ChatRepository.getProfile(name);
+   debugPrint("user name:${name},${jsonEncode(response.data)}");
+   profileDetails.value= response.data??ProfileModel();
+   isBlocked.value=response.data?.isBlocked??false;
+   isMuted.value = response.data?.isMuted??false;
+   if(response.data?.userUid?.isNotEmpty==true){
+    userUid = response.data?.userUid??"";
+      return response.data?.userUid??"";
+   }else {
+    return "";
+   }
+    
+  }
+
+   Future<void> unblockUser()async{
+    final response= await ChatInfoRepository.unblockUser(blockUuid: userUid);
+    debugPrint("unblock response:${response}");
+    if(response == "User unblocked successfully"){
+      isBlocked.value =false;
+    }
+    debugPrint("block user response:${response}");
+
+  }
+
+  Future<void> clearConversation(int conversationId) async {
+    debugPrint("clear chat called inside clear conversation");
+  try {
+    await RecentConversationRepository.clearChat(conversationId);
+    Get.back();
+     // your API
+   // results.removeWhere((e) => e.id == conversationId);
+  } catch (e) {
+    Get.snackbar("Error", "Failed to clear chat");
+  }
+}
 
   // ✅ Typing
   void onTextChanged(String value) {
@@ -604,7 +696,9 @@ class ChatController extends GetxController {
   // }
 
   @override
+
   void onClose() {
+     routeObserver.unsubscribe(this);
     // Don't force-disconnect here unless you really want
     // chatWebSocket?.disconnect();
     debugPrint("chat controller onClose()");
