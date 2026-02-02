@@ -1,5 +1,6 @@
 // livekit_group_audio_service.dart
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:livekit_client/livekit_client.dart';
@@ -204,6 +205,18 @@ class LiveKitGroupAudioService extends GetxService {
 
       if (event is RoomConnectedEvent) {
         isConnected.value = true;
+//         if (Platform.isIOS && _isCaller && !_callerToneStopped) {
+//     _callerToneStopped = true;
+//     await _stopTone("caller_room_connected");
+//   }
+//   if (Platform.isIOS && _isCaller) {
+//   final lp = room.localParticipant;
+//   if (lp != null) {
+//     await lp.setMicrophoneEnabled(false);
+//     await lp.setMicrophoneEnabled(true);
+//     debugPrint("🎛️ [IOS_FIX] restarted mic after stopping ringback");
+//   }
+// }
         debugPrint("✅ [ROOM] connected url=${room.engine.url} name=${room.name} sid=${room.getSid()}");
         _logRoomSnapshot(room, tag: "AFTER_CONNECT");
 

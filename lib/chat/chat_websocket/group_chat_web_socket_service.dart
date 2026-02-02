@@ -32,6 +32,7 @@ final RxString callID = "".obs;
   int _connectedConversationId = 0;
   bool _isConnecting = false;
   int _retryCount = 0;
+  int _lastConversationId = 0;
   bool _isReconnecting = false;
   Timer? _pingTimer;
   Timer? _pongTimer;
@@ -54,23 +55,32 @@ void _stopHeartBeat(){
     if(_waitingForPong){
       return;
     }
-    _waitingForPong=true;
+   
     try{
        final payload = {"type": "ping"};
       channel?.sink.add(jsonEncode(payload));
-      _pingTimer = Timer(Duration(seconds: 30),(){
+       _waitingForPong=true;
+       _pongTimer?.cancel();
+      _pingTimer = Timer(const Duration(seconds: 30),(){
         if(_waitingForPong){
+          debugPrint("after 30 seconds still waiting for pong so disconnect and reconnect:${_waitingForPong}");
           disconnect();
-          connect(_connectedConversationId);
+          connect(_lastConversationId);
         }
       });
     }catch(e){
-
+ debugPrint("exception on ping:");
       _stopHeartBeat();
       disconnect();
        connect(_connectedConversationId);
           }
 
+  }
+  void _onPongReceived() {
+    debugPrint("📥 xcg");
+    _waitingForPong = false;
+    _pongTimer?.cancel();
+    _pongTimer = null;
   }
   static const int _maxRetries = 5;
   // RxBool hasOngoingCall = false.obs;
@@ -119,6 +129,7 @@ debugPrint("ensure connected from room id is called:${cid}");
     }
         _isConnecting = true;
     _connectedConversationId = conversationId;
+        _lastConversationId = conversationId;
     try {
     channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}&conversationId=$conversationId"));
         debugPrint("✅ [${hashCode}] group WebSocket connected");
@@ -126,8 +137,11 @@ debugPrint("ensure connected from room id is called:${cid}");
          _retryCount = 0;
     channel?.stream.listen((event){
        final data = jsonDecode(event);
-       debugPrint("chat connection is done:$data");
-  if (data["type"] == "msg") {
+       debugPrint("group chat connection is done:$data");
+        if(data["type"]=="PONG"){
+            _onPongReceived();
+        }
+  else if (data["type"] == "msg") {
      final chatController = Get.find<GroupChatController>();
         final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
         var replyTo;
@@ -295,7 +309,7 @@ else if (data["type"] == "group_call_ended") {
 
     },
   onDone: (){
-      debugPrint("✅ chat WebSocket connection closed");
+      debugPrint("✅ group chat WebSocket connection closed");
        _isConnecting = false;
   channel = null;
   },onError: (e){

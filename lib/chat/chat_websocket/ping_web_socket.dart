@@ -134,7 +134,7 @@ void _startHeartbeat() {
 
   void connect() async {
     try {
-      debugPrint("ping socket token:${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}");
+      log("ping socket token:${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}");
       debugPrint(
           "fff:${Uri.parse("${ApiConstants.pingWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token) ?? ""}&type=ping")}");
       channel = IOWebSocketChannel.connect(

@@ -78,30 +78,30 @@ class ChatInfoScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           _sectionTitle("Privacy"),
-          _actionRow(
-            icon: Icons.person,
-            titleColor:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
+          // _actionRow(
+          //   icon: Icons.person,
+          //   titleColor:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,
                     
-            title: "View Profile",
-            onTap: () async {
-              // You already do this in ChatScreen title tap
-              if (chatController.userUid.isEmpty) {
-                await chatController.getProfile();
-              }
-              if (chatController.userUid.isEmpty) {
-                Get.snackbar("Please wait", "Profile is loading");
-                return;
-              }
+          //   title: "View Profile",
+          //   onTap: () async {
+          //     // You already do this in ChatScreen title tap
+          //     if (chatController.userUid.isEmpty) {
+          //       await chatController.getProfile();
+          //     }
+          //     if (chatController.userUid.isEmpty) {
+          //       Get.snackbar("Please wait", "Profile is loading");
+          //       return;
+          //     }
 
-              final GlobalNotifierController globalNotifier =
-                  Get.find<GlobalNotifierController>();
+          //     final GlobalNotifierController globalNotifier =
+          //         Get.find<GlobalNotifierController>();
 
-              Get.lazyPut(() => OthersProfileController(uid: chatController.userUid));
-              globalNotifier.setUserId(chatController.userUid);
+          //     Get.lazyPut(() => OthersProfileController(uid: chatController.userUid));
+          //     globalNotifier.setUserId(chatController.userUid);
 
-              Get.toNamed(AppRoutes.othersProfile);
-            },
-          ),
+          //     Get.toNamed(AppRoutes.othersProfile);
+          //   },
+          // ),
           Obx(
              () {
               return _actionRow(
