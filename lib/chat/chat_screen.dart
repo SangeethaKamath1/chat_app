@@ -97,30 +97,33 @@ class ChatScreen extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          title: InkWell(
-            onTap: () async {
-              debugPrint("useruid in chat:${chatController.userUid}");
-              if (chatController.userUid.isEmpty) {
-                // Ensure profile is fetched
-                await chatController.getProfile();
-              }
+          title: 
+          
+          // InkWell(
+          //   onTap: () async {
+          //     debugPrint("useruid in chat:${chatController.userUid}");
+          //     if (chatController.userUid.isEmpty) {
+          //       // Ensure profile is fetched
+          //       await chatController.getProfile();
+          //     }
 
-              if (chatController.userUid.isEmpty) {
-                Get.snackbar("Please wait", "Profile is loading");
-                return;
-              }
+          //     if (chatController.userUid.isEmpty) {
+          //       Get.snackbar("Please wait", "Profile is loading");
+          //       return;
+          //     }
 
-              final GlobalNotifierController globalNotifier =
-                  Get.find<GlobalNotifierController>();
+          //     final GlobalNotifierController globalNotifier =
+          //         Get.find<GlobalNotifierController>();
 
-              Get.lazyPut(
-                () => OthersProfileController(uid: chatController.userUid),
-              );
+          //     Get.lazyPut(
+          //       () => OthersProfileController(uid: chatController.userUid),
+          //     );
 
-              globalNotifier.setUserId(chatController.userUid);
-              Get.toNamed(AppRoutes.othersProfile);
-            },
-            child: Row(
+          //     globalNotifier.setUserId(chatController.userUid);
+          //     Get.toNamed(AppRoutes.othersProfile);
+          //   },
+          //   child: 
+            Row(
               children: [
                 CircleAvatar(
                   radius: 18,
@@ -155,7 +158,7 @@ class ChatScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700))
               ],
             ),
-          ),
+         // ),
           backgroundColor: chatConfigController.config.primaryColor,
           actions: [
             InkWell(
