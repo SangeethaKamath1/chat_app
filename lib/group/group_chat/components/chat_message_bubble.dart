@@ -17,12 +17,14 @@ class ChatMessageBubble extends StatelessWidget {
   final dynamic message;
   final int index;
   final bool isMine;
+  final bool isForwarded;
   final GroupChatController chatController;
 
   const ChatMessageBubble({
     super.key,
     required this.message,
     required this.index,
+     required this.isForwarded,
     required this.isMine,
     required this.chatController,
   });
@@ -33,105 +35,112 @@ class ChatMessageBubble extends StatelessWidget {
     final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
     return Obx(() {
-      return Container(
-        key: bubbleKey,
-        color: chatController.chatIndex.value == index
-            ? Colors.lightBlueAccent.withOpacity(0.15)
-            : Colors.transparent,
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null &&
-                    details.primaryVelocity! > 0) {
-                  chatController.setReply(message);
-                }
-              },
-              onLongPressStart: (details) {
-                chatController.chatIndex.value = index;
-                chatController.messageId.value = message.id ?? "";
-                final Offset position = details.globalPosition;
-
-                showReactionOverlayForGroup(
-                  context: context,
-                  position: position,
-                  bubbleKey: bubbleKey,
-                  messageId: message.id ?? "",
-                  chatController: chatController,
-                  isMine: isMine,
-                );
-              },
-              child: Align(
-                alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: EdgeInsets.only(
-                    top: 4,
-                    bottom: message.reactions?.isNotEmpty == true ? 22 : 4,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: isMine
-                        ? chatConfigController.config.primaryColor
-                        : (isDark ? Colors.grey[800] : Colors.grey[300]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// Sender name (if not mine)
-                      if (!isMine)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            message.senderUsername ?? "Unknown",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: isDark ? Colors.white70 : Colors.black87,
-                            ),
-                          ),
-                        ),
-
-                      /// Reply preview
-                      if (message.replayTo != null)
-                        _buildReplyPreview(message, isMine, isDark),
-
-                      /// Message content (media or text)
-                      if (message.medias != null && message.medias!.isNotEmpty)
-                        _buildMediaMessage(context, message, isMine)
-                      else
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
+      return Column(
+        crossAxisAlignment: isMine?CrossAxisAlignment.end:CrossAxisAlignment.start,
+        children: [
+            isForwarded==true?
+                            Text(isMine?"You Forwarded a message":"Forwared message",textAlign: TextAlign.right,):const SizedBox.shrink(),
+          Container(
+            key: bubbleKey,
+            color: chatController.chatIndex.value == index
+                ? Colors.lightBlueAccent.withOpacity(0.15)
+                : Colors.transparent,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity != null &&
+                        details.primaryVelocity! > 0) {
+                      chatController.setReply(message);
+                    }
+                  },
+                  onLongPressStart: (details) {
+                    chatController.chatIndex.value = index;
+                    chatController.messageId.value = message.id ?? "";
+                    final Offset position = details.globalPosition;
+          
+                    showReactionOverlayForGroup(
+                      context: context,
+                      position: position,
+                      bubbleKey: bubbleKey,
+                      messageId: message.id ?? "",
+                      chatController: chatController,
+                      isMine: isMine, message: message,
+                    );
+                  },
+                  child: Align(
+                    alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: EdgeInsets.only(
+                        top: 4,
+                        bottom: message.reactions?.isNotEmpty == true ? 22 : 4,
+                      ),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: isMine
+                            ? chatConfigController.config.primaryColor
+                            : (isDark ? Colors.grey[800] : Colors.grey[300]),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Sender name (if not mine)
+                          if (!isMine)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
                               child: Text(
-                                message.message ?? "",
+                                message.senderUsername ?? "Unknown",
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  color: isMine
-                                      ? Colors.white
-                                      : (isDark
-                                          ? Colors.white
-                                          : Colors.black54),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: isDark ? Colors.white70 : Colors.black87,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                    ],
+          
+                          /// Reply preview
+                          if (message.replayTo != null)
+                            _buildReplyPreview(message, isMine, isDark),
+          
+                          /// Message content (media or text)
+                          if (message.medias != null && message.medias!.isNotEmpty)
+                            _buildMediaMessage(context, message, isMine)
+                          else
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    message.message ?? "",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: isMine
+                                          ? Colors.white
+                                          : (isDark
+                                              ? Colors.white
+                                              : Colors.black54),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+          
+                /// Reaction bubble
+                if (message.reactions?.isNotEmpty == true)
+                  _buildReactionBubble(context, message, isMine),
+              ],
             ),
-
-            /// Reaction bubble
-            if (message.reactions?.isNotEmpty == true)
-              _buildReactionBubble(context, message, isMine),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }

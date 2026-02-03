@@ -129,6 +129,7 @@ debugPrint("ensure connected from room id is called:${cid}");
     }
         _isConnecting = true;
     _connectedConversationId = conversationId;
+     debugPrint("connected conversation id:${_connectedConversationId}");
         _lastConversationId = conversationId;
     try {
     channel = IOWebSocketChannel.connect(Uri.parse("${ApiConstants.groupChatWebsocketUrl}?token=${chatConfigController.config.prefs.getString(chatConfigController.config.token)}&conversationId=$conversationId"));
@@ -312,6 +313,7 @@ else if (data["type"] == "group_call_ended") {
       debugPrint("✅ group chat WebSocket connection closed");
        _isConnecting = false;
   channel = null;
+  _stopHeartBeat();
   },onError: (e){
      _isConnecting = false;
   channel = null;
@@ -354,6 +356,67 @@ else if (data["type"] == "group_call_ended") {
     _isReconnecting = false;
   }
 
+Future<void> sendMsgToConversationOneShot({
+  required int targetConversationId,
+  required String targetConversationType,
+  required Map<String, dynamic> payload,
+}) async {
+  debugPrint("target conversation id:${targetConversationId},${targetConversationType}");
+  final token = chatConfigController.config.prefs.getString(
+    chatConfigController.config.token,
+  );
+if(targetConversationType == "PRIVATE_CHAT"){
+  final uri = Uri.parse(
+    "${ApiConstants.chatWebSocketService}"
+    "?token=$token"
+    "&conversationId=$targetConversationId",
+  );
+
+  IOWebSocketChannel? temp;
+  try {
+     temp = IOWebSocketChannel.connect(uri);
+  
+
+  //   // small delay to ensure connection is ready
+  //   await Future.delayed(const Duration(milliseconds: 120));
+
+   temp.sink.add(jsonEncode(payload));
+    debugPrint("📤 Forward sent to conv=$targetConversationId : $payload");
+  } catch (e) {
+    debugPrint("❌ Forward failed conv=$targetConversationId : $e");
+    rethrow;
+  } finally {
+    try {
+     await temp?.sink.close(status.normalClosure);
+    } catch (_) {}
+  }
+}else{
+    final uri = Uri.parse(
+    "${ApiConstants.groupChatWebsocketUrl}"
+    "?token=$token"
+    "&conversationId=$targetConversationId",
+  );
+
+  IOWebSocketChannel? temp;
+  try {
+     temp = IOWebSocketChannel.connect(uri);
+  
+
+  //   // small delay to ensure connection is ready
+  //   await Future.delayed(const Duration(milliseconds: 120));
+
+   temp.sink.add(jsonEncode(payload));
+    debugPrint("📤 Forward sent to conv=$targetConversationId : $payload");
+  } catch (e) {
+    debugPrint("❌ Forward failed conv=$targetConversationId : $e");
+    rethrow;
+  } finally {
+    try {
+     await temp?.sink.close(status.normalClosure);
+    } catch (_) {}
+  }
+}
+}
 
 
     void emitGroupCallStarted({

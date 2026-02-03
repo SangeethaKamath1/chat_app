@@ -18,12 +18,14 @@ class ChatMessageBubble extends StatelessWidget {
   final Conversations message;
   final int index;
   final bool isMine;
+  final bool isForwarded;
   final ChatController chatController;
 
   const ChatMessageBubble({
     super.key,
     required this.message,
     required this.index,
+    required this.isForwarded,
     required this.isMine,
     required this.chatController,
   });
@@ -34,96 +36,106 @@ class ChatMessageBubble extends StatelessWidget {
     final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
     return Obx(() {
-      return Container(
-        key: bubbleKey,
-        color: chatController.chatIndex.value == index
-            ? Colors.lightBlueAccent.withOpacity(0.2)
-            : Colors.transparent,
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            GestureDetector(
-              /// Swipe right to reply
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null &&
-                    details.primaryVelocity! > 0) {
-                  chatController.setReply(message);
-                }
-              },
-
-              /// Long press → show reaction overlay
-              onLongPressStart: (details) {
-                chatController.chatIndex.value = index;
-                chatController.messageId.value = message.id ?? "";
-                final Offset position = details.globalPosition;
-                chatController.removeReactionOverlay();
-
-                showReactionOverlay(
-                  context: context,
-                  position: position,
-                  bubbleKey: bubbleKey,
-                  messageId: message.id ?? "",
-                  chatController: chatController,
-                  isMine: isMine,
-                );
-              },
-
-              child: Align(
-                alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: EdgeInsets.only(
-                    top: 4,
-                    bottom: message.reactions?.isNotEmpty == true ? 22 : 4,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: isMine
-                        ? chatConfigController.config.primaryColor
-                        : (isDark ? Colors.grey[700] : Colors.grey[300]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// Reply preview
-                      if (message.replayTo != null)
-                        _buildReplyPreview(message, isMine, isDark),
-
-                      /// Message text OR media
-                      if (message.medias != null && message.medias!.isNotEmpty)
-                        _buildMediaMessage(context, message, isMine)
-                      else
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                message.message ?? "",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: isMine
-                                      ? Colors.white
-                                      : (isDark ? Colors.white : Colors.black),
+      return Column(
+     
+        crossAxisAlignment: isMine?CrossAxisAlignment.end:CrossAxisAlignment.start,
+        children: [
+            isForwarded==true?
+                            Text(isMine?"You Forwarded a message":"Forwared message",textAlign: TextAlign.right,):const SizedBox.shrink(),
+          Container(
+            key: bubbleKey,
+            color: chatController.chatIndex.value == index
+                ? Colors.lightBlueAccent.withOpacity(0.2)
+                : Colors.transparent,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  /// Swipe right to reply
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity != null &&
+                        details.primaryVelocity! > 0) {
+                      chatController.setReply(message);
+                    }
+                  },
+          
+                  /// Long press → show reaction overlay
+                  onLongPressStart: (details) {
+                    chatController.chatIndex.value = index;
+                    chatController.messageId.value = message.id ?? "";
+                    final Offset position = details.globalPosition;
+                    chatController.removeReactionOverlay();
+          
+                    showReactionOverlay(
+                      context: context,
+                      position: position,
+                      bubbleKey: bubbleKey,
+                      message: message, // ✅ NEW
+                      messageId: message.id ?? "",
+                      chatController: chatController,
+                      isMine: isMine,
+                    );
+                  },
+          
+                  child: Align(
+                    alignment:
+                        isMine ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: EdgeInsets.only(
+                        top: 4,
+                        bottom: message.reactions?.isNotEmpty == true ? 22 : 4,
+                      ),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: isMine
+                            ? chatConfigController.config.primaryColor
+                            : (isDark ? Colors.grey[700] : Colors.grey[300]),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Reply preview
+                          if (message.replayTo != null)
+                            _buildReplyPreview(message, isMine, isDark),
+          
+                          /// Message text OR media
+                          if (message.medias != null && message.medias!.isNotEmpty)
+                            _buildMediaMessage(context, message, isMine)
+                          else
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    message.message ?? "",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: isMine
+                                          ? Colors.white
+                                          : (isDark ? Colors.white : Colors.black),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 6),
+                                if (isMine) _buildStatusIcon(message.status),
+                              ],
                             ),
-                            const SizedBox(width: 6),
-                            if (isMine) _buildStatusIcon(message.status),
-                          ],
-                        ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+          
+                /// Reaction bubble underneath message
+                if (message.reactions?.isNotEmpty == true)
+                  _buildReactionBubble(context, message, isMine),
+              ],
             ),
-
-            /// Reaction bubble underneath message
-            if (message.reactions?.isNotEmpty == true)
-              _buildReactionBubble(context, message, isMine),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
@@ -241,7 +253,6 @@ class ChatMessageBubble extends StatelessWidget {
             child: Stack(
               children: [
                 _buildMediaCollage(medias),
-
                 if (isUploading)
                   Container(
                     width: 220,
@@ -254,14 +265,12 @@ class ChatMessageBubble extends StatelessWidget {
               ],
             ),
           ),
-
           if (isUploading)
             _buildProgressOverlay(
               isUploading: true,
               uploadProgress: message.uploadProgress?.value ?? 0.0,
               downloadProgress: 0.0,
             ),
-
           if (isMine && !isUploading)
             Positioned(
               bottom: 4,
@@ -591,14 +600,14 @@ class ChatMessageBubble extends StatelessWidget {
     final medias = (reply.medias ?? []).cast<String>();
     final bool hasSingleMedia = medias.length == 1;
     final bool hasMultipleMedia = medias.length > 1;
-    final bool hasText = reply.message != null && reply.message!.trim().isNotEmpty;
+    final bool hasText =
+        reply.message != null && reply.message!.trim().isNotEmpty;
 
-    final senderName =
-        reply.senderUsername ==
-                chatConfigController.config.prefs
-                    .getString(chatConfigController.config.username)
-            ? "You"
-            : (reply.senderUsername ?? "Unknown");
+    final senderName = reply.senderUsername ==
+            chatConfigController.config.prefs
+                .getString(chatConfigController.config.username)
+        ? "You"
+        : (reply.senderUsername ?? "Unknown");
 
     return Container(
       width: 250,
@@ -645,7 +654,8 @@ class ChatMessageBubble extends StatelessWidget {
                             fit: StackFit.expand,
                             children: [
                               if (snapshot.hasData && snapshot.data != null)
-                                Image.file(File(snapshot.data!), fit: BoxFit.cover)
+                                Image.file(File(snapshot.data!),
+                                    fit: BoxFit.cover)
                               else
                                 Container(
                                   color: Colors.black87,
@@ -709,7 +719,9 @@ class ChatMessageBubble extends StatelessWidget {
                   hasMultipleMedia
                       ? "📷 ${medias.length} ${_containsVideo(medias) ? 'Media' : 'Photos'}"
                       : hasSingleMedia
-                          ? isVideo(medias.first) ? "🎥 Video" : "📷 Photo"
+                          ? isVideo(medias.first)
+                              ? "🎥 Video"
+                              : "📷 Photo"
                           : hasText
                               ? reply.message!
                               : "Message",
@@ -981,7 +993,8 @@ class ChatMessageBubble extends StatelessWidget {
   // ===========================================================================
   // REACTION BUBBLE
   // ===========================================================================
-  Widget _buildReactionBubble(BuildContext context, Conversations message, bool isMine) {
+  Widget _buildReactionBubble(
+      BuildContext context, Conversations message, bool isMine) {
     return Positioned(
       bottom: 10,
       right: isMine ? 12 : null,

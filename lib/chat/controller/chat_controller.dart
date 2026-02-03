@@ -183,7 +183,7 @@ void didPopNext() {
   Future<String> getProfile()async{
     debugPrint("get profile called");
    final response =  await ChatRepository.getProfile(name);
-   debugPrint("user name:${name},${jsonEncode(response.data)}");
+  //  debugPrint("user name:${name},${jsonEncode(response.data)}");
    profileDetails.value= response.data??ProfileModel();
    isBlocked.value=response.data?.isBlocked??false;
    isMuted.value = response.data?.isMuted??false;
@@ -195,6 +195,74 @@ void didPopNext() {
    }
     
   }
+
+
+// ✅ Forward support (single message)
+final Rxn<Conversations> forwardMessage = Rxn<Conversations>();
+
+void setForwardMessage(Conversations msg) => forwardMessage.value = msg;
+void clearForwardMessage() => forwardMessage.value = null;
+
+Future<void> forwardToMultipleConversations({
+  required Map<int, String> targetConversation, // key=id, value=type
+}) async {
+  final msg = forwardMessage.value;
+  if (msg == null) return;
+
+  final rawText = (msg.message ?? "").trim();
+  final encryptedText =
+      rawText.isNotEmpty ? EncryptionHelper.encryptText(rawText) : "";
+
+  final medias = (msg.medias ?? []).cast<dynamic>();
+
+  for (final entry in targetConversation.entries) {
+    final int cid = entry.key;
+    final String chatType = entry.value; // ✅ PRIVATE_CHAT / GROUP_CHAT
+
+    final String newMsgId = "${cid}_${uuid.v4()}";
+    debugPrint("medias: $medias");
+
+    final payload = <String, dynamic>{
+      "type": "msg",
+      "messageId": newMsgId,
+      "msg": encryptedText,
+      "isForwarded": true,
+      if (medias.isNotEmpty) "urls": medias,
+    };
+
+    debugPrint("convo id: $cid, current: $conversationId, type: $chatType");
+
+    // If forwarding to currently open conversation, add locally
+    if (cid.toString() == conversationId.toString()) {
+      conversations.insert(
+        0,
+        Conversations(
+          id: newMsgId,
+          senderUUID: chatConfigController.config.prefs
+              .getInt(chatConfigController.config.id)
+              .toString(),
+          senderUsername: chatConfigController.config.prefs
+              .getString(chatConfigController.config.username),
+          message: rawText,
+          medias: medias,
+          isForwarded: true,
+          status: "SEND",
+        ),
+      );
+      conversations.refresh();
+    }
+
+    debugPrint("payload: ${jsonEncode(payload)}");
+
+    await chatWebSocket.sendMsgToConversationOneShot(
+      targetConversationId: cid,
+      targetConversationType: chatType, // ✅ NEW: send type also
+      payload: payload,
+    );
+  }
+
+  clearForwardMessage();
+}
 
    Future<void> unblockUser()async{
     final response= await ChatInfoRepository.unblockUser(blockUuid: userUid);
@@ -565,6 +633,7 @@ void didPopNext() {
 
           if (msg != null && msg.isNotEmpty) {
             try {
+              debugPrint("conversation list decrypttext called");
               ele.message = EncryptionHelper.decryptText(msg);
             } catch (e) {
               debugPrint("Decryption failed for ${ele.id}: $e");
@@ -587,6 +656,7 @@ void didPopNext() {
             final replyMsg = ele.replayTo.message;
             if (replyMsg != null && replyMsg.isNotEmpty) {
               try {
+                 debugPrint("conversation list decrypttext called");
                 ele.replayTo.message = EncryptionHelper.decryptText(replyMsg);
               } catch (e) {
                 debugPrint("Reply decrypt failed for ${ele.id}: $e");
@@ -655,6 +725,7 @@ void didPopNext() {
 
       if (reactionsPageNumber == 0) {
         for (final ele in response.items ?? []) {
+           debugPrint("getreactions decrypttext called");
           ele.reaction = EncryptionHelper.decryptText(ele.reaction);
         }
         reactions.assignAll(response.items ?? []);

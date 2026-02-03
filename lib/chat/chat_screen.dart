@@ -543,6 +543,7 @@ chatController.isBlocked.value=value;
                           return ChatMessageBubble(
                             message: message,
                             index: index,
+                            isForwarded: message.isForwarded??false,
                             isMine: isMine,
                             chatController: chatController,
                           );

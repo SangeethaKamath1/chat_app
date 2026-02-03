@@ -59,6 +59,7 @@ class Conversations {
   RxBool? isUploading; // true while uploading
   RxBool? isDownloading; // true while downloading
   int? reactionCount;
+  bool? isForwarded;
 
   Conversations(
       {this.id,
@@ -69,6 +70,7 @@ class Conversations {
       this.message,
       this.status,
       this.medias,
+      this.isForwarded,
       this.replayTo,
       this.reaction,
        this.uploadProgress,
@@ -90,6 +92,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
     senderId:json['senderId'],
     message : json['message'],
     status :json['status'],
+    isForwarded: json['isForwarded'],
     medias :json['medias'],
      reaction :json['reaction'],
     replayTo : json['replayTo'] != null
@@ -108,6 +111,7 @@ factory   Conversations.fromJson(Map<String, dynamic> json) {
     data['id'] = this.id;
     data['senderUUID'] = this.senderUUID;
     data['senderId']=this.senderId;
+    data['isForwarded']=this.isForwarded;
     data['senderUsername'] = this.senderUsername;
     data['message'] = this.message;
     data["medias"]=this.medias;
