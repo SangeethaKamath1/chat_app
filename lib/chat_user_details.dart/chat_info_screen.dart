@@ -15,7 +15,7 @@ class ChatInfoScreen extends StatelessWidget {
 
   final ChatController chatController = Get.find<ChatController>();
   final ChatInfoController chatInfoController = Get.find<ChatInfoController>();
-  final RxBool isMuted = false.obs; // UI only for now
+  
 
   @override
   Widget build(BuildContext context) {
@@ -59,10 +59,10 @@ class ChatInfoScreen extends StatelessWidget {
           _sectionTitle("Notifications"),
           Obx(() {
             return SwitchListTile(
-              value: isMuted.value,
+              value: chatInfoController.isMuted.value,
               onChanged: (v) {
-                isMuted.value = v;
-               isMuted.value? chatInfoController.muteUser():chatInfoController.unmuteUser();
+                chatInfoController.isMuted.value = v;
+               chatInfoController.isMuted.value? chatInfoController.muteUser():chatInfoController.unmuteUser();
                 Get.snackbar(
                   "Notifications",
                   v ? "Muted" : "Unmuted",
@@ -251,7 +251,8 @@ class ChatInfoScreen extends StatelessWidget {
         'callerId': chatController.userId,
         'isVideo': isVideo,
         'isBlockedBy':chatInfoController.isBlockedBy.value,
-        "isBlocked":chatInfoController.isBlocked.value
+        "isBlocked":chatInfoController.isBlocked.value,
+        
       },
     );
   }

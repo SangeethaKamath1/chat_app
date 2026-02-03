@@ -1,63 +1,193 @@
-
+import 'package:amu_alumni/utils/resources/color_resources.dart';
 import 'package:chat_app/chat_app.dart';
 import 'package:chat_app/helpers.dart';
 import 'package:chat_app/src/theme/controller/chat_theme_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-
+import '../chat/controller/chat_controller.dart';
+import '../group/group_chat/controller/group_chat_controller.dart';
 import 'controller/recent_conversation_controller.dart';
 
-class RecentConversationScreen extends GetView<RecentConversationController> {
+class RecentConversationScreen extends StatefulWidget {
   const RecentConversationScreen({super.key});
 
   @override
+  State<RecentConversationScreen> createState() =>
+      _RecentConversationScreenState();
+}
+
+class _RecentConversationScreenState extends State<RecentConversationScreen> {
+  final RecentConversationController controller =
+      Get.find<RecentConversationController>();
+
+  /// ✅ Forward mode selection (max 5)
+  /// key = conversationId, value = user.type (PRIVATE_CHAT / GROUP_CHAT)
+  final RxMap<int, String> selectedConversations = <int, String>{}.obs;
+
+  bool get isForwardMode =>
+      (Get.arguments as Map<String, dynamic>?)?["mode"] == "forward";
+
+  /// ✅ who initiated forward: "private" | "group"
+  String get forwardFrom =>
+      (Get.arguments as Map<String, dynamic>?)?["from"]?.toString() ?? "private";
+
+  void toggleSelect(int conversationId, String type) {
+    if (conversationId == 0) return;
+
+    if (selectedConversations.containsKey(conversationId)) {
+      selectedConversations.remove(conversationId);
+      return;
+    }
+
+    if (selectedConversations.length >= 5) {
+      Get.snackbar("Limit reached", "You can forward to up to 5 chats");
+      return;
+    }
+
+    selectedConversations[conversationId] = type;
+  }
+
+  Future<void> forwardNow() async {
+    if (selectedConversations.isEmpty) {
+      Get.snackbar("Select chats", "Choose at least 1 chat");
+      return;
+    }
+
+    try {
+      if (forwardFrom == "group") {
+        if (!Get.isRegistered<GroupChatController>()) {
+          Get.snackbar("Error", "Group chat controller not found");
+          return;
+        }
+
+        final groupController = Get.find<GroupChatController>();
+
+        if (groupController.forwardMessage.value == null) {
+          Get.snackbar("Error", "No message selected to forward");
+          return;
+        }
+
+        await groupController.forwardToMultipleConversations(
+          targetConversation: selectedConversations,
+        );
+      } else {
+        if (!Get.isRegistered<ChatController>()) {
+          Get.snackbar("Error", "Chat controller not found");
+          return;
+        }
+
+        final chatController = Get.find<ChatController>();
+
+        if (chatController.forwardMessage.value == null) {
+          Get.snackbar("Error", "No message selected to forward");
+          return;
+        }
+
+        await chatController.forwardToMultipleConversations(
+          targetConversation: selectedConversations,
+        );
+      }
+
+      selectedConversations.clear();
+      Get.back();
+      Get.snackbar("Forwarded", "Message forwarded");
+    } catch (e) {
+      Get.snackbar("Error", "Forward failed");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-   
-           
+    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            "Conversations",
-            style: TextStyle(color: Colors.white),
+          title: Text(
+            isForwardMode ? "Forward to..." : "Conversations",
+            style: const TextStyle(color: Colors.white),
           ),
-          leading: InkWell(
-            onTap: () {
-              chatConfigController.config.prefs
-                  .setInt(chatConfigController.config.conversationId, 0);
-              Get.toNamed(ChatAppRoutes.createGroup)?.then((_) {
-                controller.page = 0;
-                controller.isLastPage = false;
-                //Get.put(SubscribeWebSocketService(conversationController));
-                controller.search();
-              });
-            },
-            child: const Icon(Icons.group_add),
-          ),
+          leading: isForwardMode
+              ? InkWell(
+                  onTap: () => Get.back(),
+                  child: const Icon(Icons.close, color: Colors.white),
+                )
+              : InkWell(
+                  onTap: () {
+                    chatConfigController.config.prefs
+                        .setInt(chatConfigController.config.conversationId, 0);
+                    Get.toNamed(ChatAppRoutes.createGroup)?.then((_) {
+                      controller.page = 0;
+                      controller.isLastPage = false;
+                      controller.search();
+                    });
+                  },
+                  child: const Icon(Icons.group_add, color: Colors.white),
+                ),
           automaticallyImplyLeading: false,
           backgroundColor: chatConfigController.config.primaryColor,
           actions: [
-            InkWell(
-              onTap: () {
-                // Get.delete<PingWebSocketService>(force: true);
-                // Get.put(PingWebSocketService()).connect();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  controller.page = 0;
-                  controller.isLastPage = false;
-                 // Get.put(SubscribeWebSocketService(conversationController));
-                  controller.search();
-                });
-                Get.toNamed(ChatAppRoutes.searchScreenInChat);
-              },
-              child: const Padding(
-                padding: EdgeInsets.only(right: 8.0),
-                child: Icon(Icons.search),
+            if (!isForwardMode)
+              InkWell(
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    controller.page = 0;
+                    controller.isLastPage = false;
+                    controller.search();
+                  });
+                  Get.toNamed(ChatAppRoutes.searchScreenInChat);
+                },
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: Icon(Icons.search, color: Colors.white),
+                ),
               ),
-            )
           ],
         ),
+
+        /// ✅ Forward bottom bar
+        bottomNavigationBar: isForwardMode
+            ? Obx(() {
+                final count = selectedConversations.length;
+                return SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: chatConfigController.config.primaryColor,
+                      boxShadow: const [
+                        BoxShadow(blurRadius: 4, color: Colors.black26),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "Forward ($count/5)",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: count == 0 ? null : () => forwardNow(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor:
+                                chatConfigController.config.primaryColor,
+                          ),
+                          child: const Text("Send"),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              })
+            : null,
+
         body: Column(
           children: [
             Expanded(
@@ -88,12 +218,9 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                     if (controller.results.isEmpty) {
                       return Center(
                         child: Text(
-                          "No conevrsations found",
+                          "No conversations found",
                           style: TextStyle(
-                            color: MediaQuery.platformBrightnessOf(context) ==
-                                    Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       );
@@ -103,6 +230,7 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                       itemCount: controller.results.length,
                       itemBuilder: (context, index) {
                         final user = controller.results[index];
+                        final convId = user.id ?? 0;
 
                         return ListTile(
                           leading: Stack(
@@ -166,7 +294,9 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                                                 : Colors.grey,
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                                color: Colors.white, width: 2),
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
                                           ),
                                         );
                                       }),
@@ -177,13 +307,10 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
 
                           title: Text(
                             user.owner != null
-                                ? user.groupName ?? ""
-                                : user.peerUser?.username ?? "",
+                                ? (user.groupName ?? "")
+                                : (user.peerUser?.username ?? ""),
                             style: TextStyle(
-                              color: MediaQuery.platformBrightnessOf(context) ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
 
@@ -201,7 +328,6 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                             if (user.unreadCount.value > 0) {
                               return Text(
                                 "${user.unreadCount.value} new messages",
-                                //${formatDate(DateTime.fromMillisecondsSinceEpoch(conversationController.lastMessageList[index].createdAt ?? 0))}",
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey,
@@ -210,90 +336,74 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                               );
                             }
 
-                            // final lastMsg =
-                            //     controller.lastMessageList[index];
-
-                            // if (lastMsg.message?.isNotEmpty == true) {
-                            //   return Row(
-                            //     mainAxisAlignment:
-                            //         MainAxisAlignment.spaceBetween,
-                            //     children: [
-                            //       SizedBox(
-                            //         width: 200,
-                            //         child: Text(
-                            //           lastMsg.message ?? "",
-                            //           maxLines: 1,
-                            //           overflow: TextOverflow.ellipsis,
-                            //           style: const TextStyle(
-                            //             fontSize: 12,
-                            //             color: Colors.grey,
-                            //             fontWeight: FontWeight.bold,
-                            //           ),
-                            //         ),
-                            //       ),
-                            //       Text(
-                            //         formatDate(
-                            //           DateTime.fromMillisecondsSinceEpoch(
-                            //               lastMsg.createdAt ?? 0),
-                            //         ),
-                            //         style: const TextStyle(
-                            //           fontSize: 12,
-                            //           color: Colors.grey,
-                            //           fontWeight: FontWeight.bold,
-                            //         ),
-                            //       ),
-                              //  ],
-                             // );
-                           // }
-
                             return const SizedBox.shrink();
                           }),
 
-                          /// 🔥 CLEAR CHAT MENU
-                          trailing: PopupMenuButton<String>(
-                            icon: Icon(
-                              Icons.more_vert,
-                              color: MediaQuery.platformBrightnessOf(context) ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black,
-                            ),
-                            onSelected: (value) {
-                              if (value == "clear") {
-                                _showClearChatDialog(
-                                  context,
-                                  controller,
-                                  user.id ?? 0,
-                                 
-                                  
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: "clear",
-                                child: Text(
-                                  "Delete Chat",
-                                  style: TextStyle(
-                                    color: MediaQuery.platformBrightnessOf(
-                                                context) ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : Colors.black,
+                          /// ✅ Trailing: checkbox in forward mode, menu otherwise
+                          trailing: isForwardMode
+                              ? Obx(() {
+                                  final selected =
+                                      selectedConversations.containsKey(convId);
+
+                                  return Checkbox(
+                                    value: selected,
+                                    activeColor: ColorResources.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6.0),
+                                    ),
+                                    side: MaterialStateBorderSide.resolveWith(
+                                      (_) => const BorderSide(
+                                        width: 1.0,
+                                        color: ColorResources.primary,
+                                      ),
+                                    ),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    onChanged: (_) =>
+                                        toggleSelect(convId, user.type ?? ""),
+                                  );
+                                })
+                              : PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color:
+                                        isDark ? Colors.white : Colors.black,
                                   ),
+                                  onSelected: (value) {
+                                    if (value == "clear") {
+                                      _showClearChatDialog(
+                                        context,
+                                        controller,
+                                        convId,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: "clear",
+                                      child: Text(
+                                        "Delete Chat",
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
 
                           onTap: () {
+                            if (isForwardMode) {
+                              toggleSelect(convId, user.type ?? "");
+                              return;
+                            }
+
+                            // ✅ normal behaviour (open chat)
                             chatConfigController.config.prefs.setInt(
                               chatConfigController.config.conversationId,
-                              user.id ?? 0,
+                              convId,
                             );
-
-                            // Get.delete<PingWebSocketService>(force: true);
-                            // Get.put(PingWebSocketService()).connect();
 
                             if (user.type == "PRIVATE_CHAT") {
                               Get.toNamed(
@@ -304,14 +414,13 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                                   "id": user.peerUser?.id,
                                   "conversationId": user.id,
                                   "status": user.status,
-                                  "useruid":user.peerUser?.useruid??"",
-                                  "isBlockedBy":user.peerUser?.isBlockedBy??false
+                                  "useruid": user.peerUser?.useruid ?? "",
+                                  "isBlockedBy":
+                                      user.peerUser?.isBlockedBy ?? false
                                 },
                               )?.then((_) {
                                 controller.page = 0;
                                 controller.isLastPage = false;
-                                // Get.put(SubscribeWebSocketService(
-                                //     conversationController));
                                 controller.search();
                               });
                             } else {
@@ -322,13 +431,10 @@ class RecentConversationScreen extends GetView<RecentConversationController> {
                                   "icon": user.icon,
                                   "conversationId": user.id,
                                   "status": user.status,
-                                  
                                 },
                               )?.then((_) {
                                 controller.page = 0;
                                 controller.isLastPage = false;
-                                // Get.put(SubscribeWebSocketService(
-                                //     conversationController));
                                 controller.search();
                               });
                             }
@@ -355,29 +461,19 @@ void _showClearChatDialog(
 ) {
   Get.dialog(
     AlertDialog(
-      title: Text(
-        "Delete Chat",
-        //style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
-      ),
-      content: Text(
+      title: const Text("Delete Chat"),
+      content: const Text(
         "Are you sure you want to clear this chat? This action cannot be undone.",
-        //style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
       ),
       actions: [
         TextButton(
           onPressed: () => Get.back(),
-          child: Text(
-            "Cancel",
-            //style: TextStyle(color:MediaQuery.platformBrightnessOf(context)==Brightness.dark?Colors.white:Colors.black,),
-          ),
+          child: const Text("Cancel"),
         ),
         TextButton(
           onPressed: () async {
             Get.back();
             await controller.clearConversation(conversationId);
-            // controller.page = 0;
-            // controller.isLastPage = false;
-            // controller.search();
           },
           child: const Text(
             "Delete chat",

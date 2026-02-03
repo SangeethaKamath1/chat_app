@@ -407,6 +407,7 @@ debugPrint("Call id inside group chat screen:${callId}");
                             children: [
                               ChatMessageBubble(
                                 message: message,
+                                isForwarded: message.isForwarded??false,
                                 index: index,
                                 isMine: isMine,
                                 chatController: chatController,

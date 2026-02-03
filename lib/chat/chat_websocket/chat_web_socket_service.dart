@@ -171,8 +171,11 @@ StreamSubscription<UserStatusEvent>? _statusSub;
         }
 
        else if (data["type"] == "msg") {
+        var decryptedMsg = "";
           final chatController = Get.find<ChatController>();
-          final decryptedMsg = EncryptionHelper.decryptText(data['msg']);
+          if(data['msg']!=null){
+             debugPrint("type == msg decrypttext called");
+           decryptedMsg = EncryptionHelper.decryptText(data['msg']);}
 
           Conversations? replyTo;
           if (data["replyTo"] != null) {
@@ -192,6 +195,8 @@ StreamSubscription<UserStatusEvent>? _statusSub;
               senderUUID: data["sender"] ?? "",
               senderUsername: data['senderUsername'] ?? "",
               message: decryptedMsg,
+              medias:data["isForwarded"]==true &&data["urls"]!=null?data["urls"]:null,
+              isForwarded: data['isForwarded'],
               replayTo: replyTo,
             ),
           );
@@ -362,6 +367,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
         debugPrint("🔴 CHAT WS done");
         _isConnecting = false;
         channel = null;
+         _stopHeartBeat();
       }, onError: (e) {
         debugPrint("🔴 CHAT WS error: $e");
         _isConnecting = false;
@@ -497,6 +503,67 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     channel?.sink.add(jsonEncode(payload));
     if (kDebugMode) debugPrint("📤 message: $payload");
   }
+  Future<void> sendMsgToConversationOneShot({
+  required int targetConversationId,
+  required String targetConversationType,
+  required Map<String, dynamic> payload,
+}) async {
+  debugPrint("target conversation id:${targetConversationId},${targetConversationType}");
+  final token = chatConfigController.config.prefs.getString(
+    chatConfigController.config.token,
+  );
+if(targetConversationType == "PRIVATE_CHAT"){
+  final uri = Uri.parse(
+    "${ApiConstants.chatWebSocketService}"
+    "?token=$token"
+    "&conversationId=$targetConversationId",
+  );
+
+  IOWebSocketChannel? temp;
+  try {
+     temp = IOWebSocketChannel.connect(uri);
+  
+
+  //   // small delay to ensure connection is ready
+  //   await Future.delayed(const Duration(milliseconds: 120));
+
+   temp.sink.add(jsonEncode(payload));
+    debugPrint("📤 Forward sent to conv=$targetConversationId : $payload");
+  } catch (e) {
+    debugPrint("❌ Forward failed conv=$targetConversationId : $e");
+    rethrow;
+  } finally {
+    try {
+     await temp?.sink.close(status.normalClosure);
+    } catch (_) {}
+  }
+}else{
+    final uri = Uri.parse(
+    "${ApiConstants.groupChatWebsocketUrl}"
+    "?token=$token"
+    "&conversationId=$targetConversationId",
+  );
+
+  IOWebSocketChannel? temp;
+  try {
+     temp = IOWebSocketChannel.connect(uri);
+  
+
+  //   // small delay to ensure connection is ready
+  //   await Future.delayed(const Duration(milliseconds: 120));
+
+   temp.sink.add(jsonEncode(payload));
+    debugPrint("📤 Forward sent to conv=$targetConversationId : $payload");
+  } catch (e) {
+    debugPrint("❌ Forward failed conv=$targetConversationId : $e");
+    rethrow;
+  } finally {
+    try {
+     await temp?.sink.close(status.normalClosure);
+    } catch (_) {}
+  }
+}
+}
 
   void deleteMessage(String messageId, int index) {
     final chatController = Get.find<ChatController>();

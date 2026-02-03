@@ -11,7 +11,7 @@ class ChatInfoController extends GetxController{
 
   @override
   void onInit(){
-    debugPrint("user id inside chat info:${Get.arguments["useruid"]}");
+    debugPrint("user id inside chat info:${Get.arguments["useruid"]},${Get.arguments['isBlocked']},${Get.arguments["isMuted"]}");
       useruid = Get.arguments["useruid"];
       isBlocked.value = Get.arguments['isBlocked'];
       isBlockedBy.value = Get.arguments['isBlockedBy'];
