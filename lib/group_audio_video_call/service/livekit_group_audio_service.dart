@@ -97,6 +97,7 @@ class LiveKitGroupAudioService extends GetxService {
   }
 
   void stopNoAnswerTimeout() {
+    debugPrint("stop no answer timeout called");
     _noAnswerTimer?.cancel();
     _noAnswerTimer = null;
   }
@@ -230,13 +231,13 @@ class LiveKitGroupAudioService extends GetxService {
       if (event is RoomDisconnectedEvent) {
         debugPrint("❌ [ROOM] disconnected reason=${event.reason}");
         isConnected.value = false;
-        stopNoAnswerTimeout();
+      //  _isCaller? stopNoAnswerTimeout():null;
         _logRoomSnapshot(room, tag: "AFTER_DISCONNECT");
       }
 
       if (event is ParticipantConnectedEvent) {
         _anyRemoteJoined = true;
-        stopNoAnswerTimeout();
+        // stopNoAnswerTimeout();
 
         debugPrint("👤 [REMOTE_JOIN] identity=${event.participant.identity} sid=${event.participant.sid} name=${event.participant.name}");
         _logRoomSnapshot(room, tag: "AFTER_REMOTE_JOIN");

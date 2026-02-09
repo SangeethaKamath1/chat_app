@@ -61,7 +61,7 @@ void _stopHeartBeat(){
       channel?.sink.add(jsonEncode(payload));
        _waitingForPong=true;
        _pongTimer?.cancel();
-      _pingTimer = Timer(const Duration(seconds: 30),(){
+      _pongTimer = Timer(const Duration(seconds: 30),(){
         if(_waitingForPong){
           debugPrint("after 30 seconds still waiting for pong so disconnect and reconnect:${_waitingForPong}");
           disconnect();
@@ -332,6 +332,7 @@ else if (data["type"] == "group_call_ended") {
   channel = null;
   _isConnecting = false;
   _connectedConversationId = 0;
+  // _stopHeartBeat();
   }
 
   Future<void> _handleRetry() async {

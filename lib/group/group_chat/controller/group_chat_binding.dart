@@ -7,8 +7,8 @@ import 'group_chat_controller.dart';
 class GroupChatBinding extends Bindings{
   @override
   void dependencies() {
-    final chatController =Get.put(GroupChatController());
-      Get.put(GroupChatWebSocketService());
+    Get.lazyPut(()=>GroupChatController());
+      Get.lazyPut(()=>GroupChatWebSocketService());
 
   }
 

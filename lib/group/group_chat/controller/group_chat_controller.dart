@@ -21,6 +21,7 @@ class GroupChatController extends GetxController {
   RxString name = "".obs;
   RxString groupIcon = "".obs;
   RxString typingUser="".obs;
+  RxBool hasActiveUpload = false.obs;
   String roomId="";
   RxString description = "".obs;
    RxInt chatIndex = (-1).obs;
@@ -190,6 +191,7 @@ Future<void> forwardToMultipleConversations({
   }
 
   Future<void> pickMediaFromGallery({required bool isCamera}) async {
+    hasActiveUpload.value=true;
   final List<XFile> files = await _picker.pickMultipleMedia(
     limit: 5,);
 if (files.isEmpty) return;
@@ -198,30 +200,6 @@ final selectedFiles = files.take(5).toList();
 final List<dynamic> mediaPaths =
     selectedFiles.map((x) => x.path).toList();
  final messageId = "${conversationId}_${uuid.v4()}";
-
-//  final payload = {
-//         "type": "msg",
-//         "replyTo": replyTo,
-//         "receiver": receiver,
-//         "receiverUsername": receiverUsername,
-//         "messageId": messageId,
-//         "msg": message,
-//         "urls": urls
-//       };
-
-
-//  chatWebSocket!.sendMessageWithReply(
-//      replyTo: replyTo?.id??"",
-//      receiver:replyTo?.senderUUID??"",
-//      receiverUsername: replyTo?.senderUsername??"",
-//      reply:replyTo?.message != null ?replyTo!.message??"":"",
-//      urls:replyTo?.medias,
-//     //   replyTo?.medias != null
-//     // ? (replyTo!.medias ?? <dynamic>[])
-//     // : (replyTo?.message != null ? [replyTo!.message!] : <dynamic>[]),
-//       messageId:messageId, 
-//      message:  encryptedText,
-//     );
 
  final Map<String, dynamic> requestData={
   "conversationId":conversationId,
@@ -249,17 +227,6 @@ final List<dynamic> mediaPaths =
   );
     conversations.refresh();
 
-//   await Navigator.push(
-//   context,
-//   MaterialPageRoute(
-//     builder: (_) => MediaPreviewScreen(
-//       files: selectedFiles,
-//       onSend: () {
-//         chatController.sendImages(selectedFiles);
-//       },
-//     ),
-//   ),
-// );
 replyMessage.value=null;
 
   await sendAttachmentWithProgress(
@@ -268,7 +235,7 @@ replyMessage.value=null;
     messageId: messageId,
   );
 
-   
+   hasActiveUpload.value=false;
    
 }
 
@@ -392,6 +359,7 @@ Future<void> _handleCameraMedia(XFile file) async {
   final List<dynamic> mediaPaths = [file.path];
 
   final messageId = "${conversationId}_${uuid.v4()}";
+   hasActiveUpload.value=true;
 
   final Map<String, dynamic> requestData = {
     "conversationId": conversationId,
@@ -427,6 +395,7 @@ Future<void> _handleCameraMedia(XFile file) async {
     files: selectedFiles,
     messageId: messageId,
   );
+   hasActiveUpload.value=false;
 }
 
 

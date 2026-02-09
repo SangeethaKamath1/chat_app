@@ -264,6 +264,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
           });
         } else if (data["status"] == "SEEN") {
           final chatController = Get.find<ChatController>();
+          debugPrint("chat inside seen:${chatController.conversations[0].id},${data["messageId"]}");
           chatController.updateMessageStatusToSeen();
         } else if (data["type"] == "REACTION" || data["type"] == "reaction") {
           final chatController = Get.find<ChatController>();

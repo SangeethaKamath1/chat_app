@@ -55,6 +55,7 @@ class ChatRepository {
 
 //print("➡️ FINAL URL: $uri");
     if(response.statusCode == 200){
+      
      return ProfileDetailsModel.fromJson(response.data);
     }else{
       throw Exception("Something went wrong");
@@ -149,6 +150,7 @@ List<MultipartFile> files = await Future.wait(
     );
 
     if (response.statusCode == 200) {
+      debugPrint("media response:${response.data}");
       return SendMediaDataResponse.fromJson(response.data);
     }
 
@@ -325,7 +327,7 @@ List<MultipartFile> files = await Future.wait(
         },
       ),
     );
-
+debugPrint("media response:${response.statusCode}");
     if (response.statusCode == 200) {
       return SendMediaDataResponse.fromJson(response.data);
     }

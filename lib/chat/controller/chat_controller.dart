@@ -29,6 +29,7 @@ class ChatController extends GetxController with RouteAware {
   
 
   String conversationId = "";
+  RxBool hasActiveUpload = false.obs;
 
   // ✅ UI + STATE
   final ImagePicker _picker = ImagePicker();
@@ -418,13 +419,15 @@ Future<void> forwardToMultipleConversations({
 
   // ✅ Attachments: pick from gallery
   Future<void> pickMediaFromGallery({required bool isCamera}) async {
+    hasActiveUpload.value=true;
     final List<XFile> files = await _picker.pickMultipleMedia(limit: 5);
     if (files.isEmpty) return;
-
+ 
     final selectedFiles = files.take(5).toList();
     final List<dynamic> mediaPaths = selectedFiles.map((x) => x.path).toList();
 
     final String msgId = "${conversationId}_${uuid.v4()}";
+   
 
     final Map<String, dynamic> requestData = {
       "conversationId": conversationId,
@@ -460,6 +463,7 @@ Future<void> forwardToMultipleConversations({
       files: selectedFiles,
       messageId: msgId,
     );
+    hasActiveUpload.value=false;
   }
 
   // ✅ Camera helpers (same as you had)
@@ -532,7 +536,7 @@ Future<void> forwardToMultipleConversations({
     final List<dynamic> mediaPaths = [file.path];
 
     final String msgId = "${conversationId}_${uuid.v4()}";
-
+hasActiveUpload.value=true;
     final Map<String, dynamic> requestData = {
       "conversationId": conversationId,
       "messageId": msgId,
@@ -567,6 +571,7 @@ Future<void> forwardToMultipleConversations({
       files: selectedFiles,
       messageId: msgId,
     );
+     hasActiveUpload.value=false;
   }
     Future<void> disposeChat() async {
    chatWebSocket.disconnect();
@@ -687,9 +692,11 @@ Future<void> forwardToMultipleConversations({
 
   // ✅ Status updates
   void updateMessageStatusToSeen() {
+    debugPrint("update message status to seen");
     for (final ele in conversations) {
       ele.status = "SEEN";
     }
+    
     conversations.refresh();
   }
 
