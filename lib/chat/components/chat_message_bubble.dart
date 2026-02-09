@@ -210,19 +210,8 @@ class ChatMessageBubble extends StatelessWidget {
               ),
 
             /// Status icon (bottom-right) - only show when not uploading
-            if (isMine && !isUploading)
-              Positioned(
-                bottom: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _buildStatusIcon(message.status),
-                ),
-              ),
+             if (isMine && !isUploading)
+        _buildMediaStatusIcon(message),
           ],
         ),
       );
@@ -271,23 +260,27 @@ class ChatMessageBubble extends StatelessWidget {
               uploadProgress: message.uploadProgress?.value ?? 0.0,
               downloadProgress: 0.0,
             ),
-          if (isMine && !isUploading)
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: _buildStatusIcon(message.status),
-              ),
-            ),
+         if (isMine && !isUploading)
+        _buildMediaStatusIcon(message),
         ],
       ),
     );
   }
+
+    Widget _buildMediaStatusIcon(dynamic message) {
+  return Positioned(
+    bottom: 6,
+    right: 6,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: _buildStatusIcon(message.status),
+    ),
+  );
+}
 
   // ===========================================================================
   // SINGLE TILE (VIDEO THUMB FROM CACHE)

@@ -167,11 +167,12 @@ Future<void> forwardToMultipleConversations({
      
 
     if (conversationId.isNotEmpty) {
+       chatWebSocket.connect(int.parse(conversationId));
+      chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, int.parse(conversationId));
       getCurrentGroupDetails();
     getConversationsList();
       
-      chatWebSocket.connect(int.parse(conversationId));
-      chatConfigController.config.prefs.setInt(chatConfigController.config.conversationId, int.parse(conversationId));
+     
 
       // //  chatWebSocket = Get.put(ChatWebSocketService(this));
 
@@ -740,7 +741,7 @@ debugPrint("something went wrong:$e");
     conversations.refresh();
   }
   Future<void> disposeChat() async {
-   chatWebSocket!.disconnect();
+   chatWebSocket.disconnect();
 }
 
 Future<void> clearChat() async {

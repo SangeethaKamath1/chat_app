@@ -126,6 +126,8 @@ class ChatMessageBubble extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 6),
+                                if (isMine) _buildStatusIcon(message.status),
                               ],
                             ),
                         ],
@@ -144,6 +146,34 @@ class ChatMessageBubble extends StatelessWidget {
       );
     });
   }
+
+  Widget _buildStatusIcon(String? status) {
+    switch (status) {
+      case "SEND":
+        return const Icon(Icons.check, size: 18, color: Colors.white70);
+      case "DELIVERED":
+        return const Icon(Icons.done_all, size: 18, color: Colors.white70);
+      case "SEEN":
+        return const Icon(Icons.done_all, size: 18, color: Colors.lightBlue);
+      default:
+        return const Icon(Icons.check, size: 18, color: Colors.white70);
+    }
+  }
+
+  Widget _buildMediaStatusIcon(dynamic message) {
+  return Positioned(
+    bottom: 6,
+    right: 6,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: _buildStatusIcon(message.status),
+    ),
+  );
+}
 
   // ===========================================================================
   // MEDIA MESSAGE BUILDER
@@ -206,6 +236,8 @@ class ChatMessageBubble extends StatelessWidget {
                 uploadProgress: message.uploadProgress?.value ?? 0.0,
                 downloadProgress: 0.0,
               ),
+               if (isMine && !isUploading)
+        _buildMediaStatusIcon(message),
           ],
         ),
       );
@@ -253,6 +285,8 @@ class ChatMessageBubble extends StatelessWidget {
               uploadProgress: message.uploadProgress?.value ?? 0.0,
               downloadProgress: 0.0,
             ),
+             if (isMine && !isUploading)
+        _buildMediaStatusIcon(message),
         ],
       ),
     );
