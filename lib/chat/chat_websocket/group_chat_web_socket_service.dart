@@ -177,7 +177,8 @@ debugPrint("ensure connected from room id is called:${cid}");
         chatController.typingUser.value=data["senderUsername"]??"";
       }
      else if(data["type"] == "reload") {
-     final chatController = Get.find<GroupChatController>();
+     final chatController = Get.isRegistered<GroupChatController>()?
+     Get.find<GroupChatController>():Get.put(GroupChatController());
       if(data["status"]=="DELIVERED"){
         
         chatController.updateMessageStatusToDelivered();
