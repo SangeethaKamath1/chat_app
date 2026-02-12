@@ -198,14 +198,14 @@ class ChatScreen extends StatelessWidget {
                     return;
                   }
 
-                  chatController.chatWebSocket.roomId =
+                  chatController.chatWebSocket.roomId.value =
                       "${chatController.conversationId}_${chatController.uuid.v4()}";
 
                   debugPrint(
                       "📞 Starting call with room: ${chatController.chatWebSocket.roomId}");
 
                   chatController.chatWebSocket
-                      .setRoom(chatController.chatWebSocket.roomId);
+                      .setRoom(chatController.chatWebSocket.roomId.value);
 
                   final conversationIdInt =
                       int.tryParse(chatController.conversationId) ?? 0;
@@ -221,17 +221,21 @@ class ChatScreen extends StatelessWidget {
                       : Get.put(CallSessionController(), permanent: true);
                   // session.reset();
                   session.isVideo.value = false;
-
+await Get.find<LiveKitOneToOneCallService>().startOutgoingCall(
+          callId: chatController.chatWebSocket.roomId.value,
+          isVideo: false,
+        );
                   // 5) Navigate to call screen as CALLER
                   Get.toNamed(
                     ChatAppRoutes.callScreen,
                     arguments: {
                       'isCaller': true,
-                      'callId': chatController.chatWebSocket.roomId,
+                      'callId': chatController.chatWebSocket.roomId.value,
                       'fromNotification': false,
                       'callerName': chatController.name,
                       'callerId': chatController.userId,
                       'isVideo': false,
+                       'peerName':chatController.name,
                       'isBlocked':chatController.isBlocked.value,
                       "isBlockedBy":chatController.isBlockedBy.value
                     },
@@ -322,14 +326,14 @@ class ChatScreen extends StatelessWidget {
                   }
 
                   // 3) Generate room ID (same as your existing logic)
-                  chatController.chatWebSocket.roomId =
+                  chatController.chatWebSocket.roomId.value =
                       "${chatController.conversationId}_${chatController.uuid.v4()}";
 
                   debugPrint(
                       "📞 Starting call with room: ${chatController.chatWebSocket.roomId}");
 
                   chatController.chatWebSocket
-                      .setRoom(chatController.chatWebSocket.roomId);
+                      .setRoom(chatController.chatWebSocket.roomId.value);
 
                   final conversationIdInt =
                       int.tryParse(chatController.conversationId) ?? 0;
@@ -348,14 +352,19 @@ class ChatScreen extends StatelessWidget {
 
                   // session.reset();
                   session.isVideo.value = true;
+                  await Get.find<LiveKitOneToOneCallService>().startOutgoingCall(
+          callId: chatController.chatWebSocket.roomId.value,
+          isVideo: true,
+        );
 
                   // 5) Navigate to call screen as CALLER
                   Get.toNamed(
                     ChatAppRoutes.callScreen,
                     arguments: {
                       'isCaller': true,
-                      'callId': chatController.chatWebSocket.roomId,
+                      'callId': chatController.chatWebSocket.roomId.value,
                       'fromNotification': false,
+                      'peerName':chatController.name,
                       'callerName': chatController.name,
                       'callerId': chatController.userId,
                       'isVideo': true,

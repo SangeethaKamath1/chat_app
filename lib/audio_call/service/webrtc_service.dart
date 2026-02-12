@@ -722,7 +722,7 @@ class WebRTCService extends GetxService {
 
     final offer = await _pc!.createOffer();
     await _pc!.setLocalDescription(offer);
-    signaling.sendOffer(offer, isVideo);
+   // signaling.sendOffer(offer, isVideo);
   }
 
   Future<void> handleOffer(RTCSessionDescription offer) async {

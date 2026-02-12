@@ -165,8 +165,8 @@ void _startHeartbeat() {
           Get.toNamed(ChatAppRoutes.incomingCallScreen, arguments: {
             "roomId": roomId,
             "callerName": callerName,
-            "sdp": offerData['sdp'],
-            "offerType": offerData['type'],
+            "sdp": "",
+            "offerType": "",
             "fromNotification": false,
             "isVideo": isVideo
           });

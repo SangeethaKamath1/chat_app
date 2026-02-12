@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class CallSessionController extends GetxController {
@@ -36,6 +37,8 @@ class CallSessionController extends GetxController {
 
     // ✅ default video
     this.isVideo.value = isVideo ?? true;
+    
+    debugPrint("📋 CallSession hydrated - roomId: $roomId, isCaller: $isCaller, isVideo: ${this.isVideo.value}");
   }
 
   void reset() {

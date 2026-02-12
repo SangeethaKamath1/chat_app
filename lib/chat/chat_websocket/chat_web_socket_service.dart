@@ -94,7 +94,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     _pongTimer = null;
   }
 
-  String roomId = "";
+final  RxString roomId = "".obs;
   int _retryCount = 0;
   bool _isReconnecting = false;
   static const int _maxRetries = 5;
@@ -105,7 +105,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
   WebRTCService get webRTCService => Get.find<WebRTCService>();
 
   void setRoom(String callId) {
-    roomId = callId;
+    roomId.value = callId;
     debugPrint("🧩 CallSignalingService roomId set: $roomId");
   }
 
@@ -384,15 +384,17 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     }
   }
 
-  void sendOffer(RTCSessionDescription offer, bool isVideo) {
+  void callStarted(
+    //RTCSessionDescription offer, 
+  bool isVideo) {
     if (channel == null) {
       debugPrint("❌ sendOffer: channel is null");
       return;
     }
     final payload = {
       "type": "call",
-      "offer": {"sdp": offer.sdp, "type": offer.type},
-      "callID": roomId,
+      "offer": {"sdp": "", "type": ""},
+      "callID": roomId.value,
       "isVideo": isVideo
     };
     send(payload);
@@ -407,7 +409,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     final payload = {
       "type": "answer",
       "answer": {"sdp": answer.sdp, "type": answer.type},
-      "callID": roomId,
+      "callID": roomId.value,
     };
     send(payload);
     log("📤 ANSWER SENT: $payload");
@@ -425,7 +427,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
         "sdpMid": candidate.sdpMid ?? "0",
         "sdpMLineIndex": candidate.sdpMLineIndex ?? 0,
       },
-      "callID": roomId,
+      "callID": roomId.value,
     };
     send(payload);
   }

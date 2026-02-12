@@ -11,7 +11,8 @@ class GlobalBinding extends Bindings {
     Get.lazyPut(()=>ViewMembersController(), fenix: true);
     Get.lazyPut(() => ChatAddMembersController(),fenix:true);
     // Get.put(CallSignalingService(), permanent: true);
-    Get.put(WebRTCService(), permanent: true);
+    // Get.put(WebRTCService(), permanent: true);
+    Get.put(LiveKitOneToOneCallService());
     Get.put(PingWebSocketService(),permanent: true);
    
     Get.put(LiveKitGroupAudioService(), permanent: true);

@@ -231,10 +231,10 @@ class ChatInfoScreen extends StatelessWidget {
     }
 
     // reuse your existing call logic (same as ChatScreen)
-    chatController.chatWebSocket.roomId =
+    chatController.chatWebSocket.roomId.value =
         "${chatController.conversationId}_${chatController.uuid.v4()}";
 
-    chatController.chatWebSocket.setRoom(chatController.chatWebSocket.roomId);
+    chatController.chatWebSocket.setRoom(chatController.chatWebSocket.roomId.value);
 
     final conversationIdInt = int.tryParse(chatController.conversationId) ?? 0;
     if (conversationIdInt != 0) {
