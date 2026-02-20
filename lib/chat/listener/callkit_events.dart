@@ -52,9 +52,7 @@ class CallKitEvents {
       final isGroup = args["is_group"]?.toString() ?? "false";
 
       // ✅ WebRTC
-      final webrtc = Get.isRegistered<WebRTCService>()
-          ? Get.find<WebRTCService>()
-          : Get.put(WebRTCService());
+    
 
       // ✅ Signaling
       final signaling = Get.isRegistered<ChatWebSocketService>()
@@ -117,13 +115,13 @@ class CallKitEvents {
 
           try {
             debugPrint("🔄 Fetching SDP from backend...");
-            final sdp = await fetchsdpFromApi(callId);
-            debugPrint("✅ SDP fetched (len=${sdp.length})");
+           
+          final speakerSvc = Get.find<SpeakerphoneService>();
 
-            webrtc.speakerphoneService.stopRingtone();
+            speakerSvc.stopRingtone();
 
             // ✅ Apply offer -> WebRTCService will create/send answer via signaling
-            await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
+            // await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
             //  signaling.callAccepted(callId);
 
             // ✅ Navigate (no ChatController here)
@@ -135,8 +133,8 @@ class CallKitEvents {
                 "callId": callId,
                 "callerId": callerId,
                 "callerName": callerName,
-                "sdp": sdp,
-                "offerType": offerType,
+                "sdp": "",
+                "offerType": "",
                 'isVideo': session.isVideo.value
               },
             );
@@ -159,8 +157,10 @@ class CallKitEvents {
               Get.back();
             }
           } else {
-            webrtc.speakerphoneService.stopRingtone();
-            await webrtc.endCall();
+             final speakerSvc = Get.find<SpeakerphoneService>();
+      final livekit =Get.find<LiveKitOneToOneCallService>();
+            speakerSvc.stopRingtone();
+            await livekit.leaveCall();
 
             // ✅ notify other side
             signaling.callRejected(callId);
@@ -179,8 +179,10 @@ class CallKitEvents {
         debugPrint("📞 [CallKit] onCallEndedFromCallKit: callId=$callId");
 
         try {
-          webrtc.speakerphoneService.stopRingtone();
-          await webrtc.endCall();
+            final speakerSvc = Get.find<SpeakerphoneService>();
+      final livekit =Get.find<LiveKitOneToOneCallService>();
+         speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           // ✅ notify other s
           signaling.callEnded(callId);

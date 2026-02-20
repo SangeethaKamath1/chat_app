@@ -7,7 +7,7 @@ import 'package:amu_alumni/routes/app_routes.dart';
 import 'package:chat_app/constants/api_constants.dart';
 import 'package:chat_app/constants/app_constant.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
@@ -20,44 +20,46 @@ import 'group_chat_web_socket_service.dart';
 class PingWebSocketService extends GetxService {
   late IOWebSocketChannel channel;
   int _retryCount = 0;
-static const int _maxRetries = 5;
- Timer? _pingTimer;
+  static const int _maxRetries = 5;
+  Timer? _pingTimer;
   Timer? _pongTimeoutTimer;
   bool _waitingForPong = false;
-bool _isReconnecting = false;
-  final webRTCService = Get.isRegistered<WebRTCService>()
-      ? Get.find<WebRTCService>()
-      : Get.put(WebRTCService());
+  bool _isReconnecting = false;
+  // final webRTCService = Get.isRegistered<WebRTCService>()
+  //     ? Get.find<WebRTCService>()
+  //     : Get.put(WebRTCService());
   //  late WebSocketChannel statusCheckChannel;
   static int _extractConversationIdFromCallId(String callId) {
     final first = callId.split("_").first;
     return int.tryParse(first) ?? 0;
   }
-  Future<void> _retryConnect() async {
-  if (_isReconnecting) return;
 
-  if (_retryCount >= _maxRetries) {
-    debugPrint("❌ ping WebSocket max retry reached");
-    return;
+  Future<void> _retryConnect() async {
+    if (_isReconnecting) return;
+
+    if (_retryCount >= _maxRetries) {
+      debugPrint("❌ ping WebSocket max retry reached");
+      return;
+    }
+
+    _isReconnecting = true;
+    _retryCount++;
+
+    final delay = Duration(seconds: 2 * _retryCount);
+    debugPrint(
+        "🔄 ping WebSocket retry $_retryCount after ${delay.inSeconds}s");
+
+    await Future.delayed(delay);
+
+    try {
+      disconnect();
+    } catch (_) {}
+
+    connect();
+    _isReconnecting = false;
   }
 
-  _isReconnecting = true;
-  _retryCount++;
-
-  final delay = Duration(seconds: 2 * _retryCount);
-  debugPrint("🔄 ping WebSocket retry $_retryCount after ${delay.inSeconds}s");
-
-  await Future.delayed(delay);
-
-  try {
-    disconnect();
-  } catch (_) {}
-
-  connect();
-  _isReconnecting = false;
-}
-
-void _startHeartbeat() {
+  void _startHeartbeat() {
     _stopHeartbeat();
 
     // First ping will fire after 30 seconds, then every 30 seconds
@@ -99,11 +101,9 @@ void _startHeartbeat() {
         }
       });
     } catch (e) {
-      
       debugPrint("❌ Failed to send ping: $e");
       disconnect();
-                connect();
-
+      connect();
     }
   }
 
@@ -117,7 +117,7 @@ void _startHeartbeat() {
   static Future<void> _ensureSignalingConnected(String callId) async {
     final signaling = Get.isRegistered<ChatWebSocketService>()
         ? Get.find<ChatWebSocketService>()
-        : Get.put(ChatWebSocketService(), permanent: true);
+        : Get.put(ChatWebSocketService());
 
     signaling.setRoom(callId);
 
@@ -144,11 +144,11 @@ void _startHeartbeat() {
       debugPrint(
           "✅ ping WebSocket connection established:${chatConfigController.config.prefs.getString(chatConfigController.config.userId)}");
       debugPrint("connection success:");
-      _startHeartbeat();   
+      _startHeartbeat();
       channel.stream.listen((event) async {
         final data = jsonDecode(event);
         log("ping is connected:${data}");
-         if (data["type"] == "pong") {
+        if (data["type"] == "pong") {
           _onPongReceived();
           return;
         }
@@ -165,34 +165,38 @@ void _startHeartbeat() {
           Get.toNamed(ChatAppRoutes.incomingCallScreen, arguments: {
             "roomId": roomId,
             "callerName": callerName,
-            "sdp": offerData['sdp'],
-            "offerType": offerData['type'],
+            "sdp": "",
+            "offerType": "",
             "fromNotification": false,
             "isVideo": isVideo
           });
-        } else if (data["type"] == "candidate") {
-          final candidateData = data["candidate"];
-          final callId = data["callID"]?.toString() ?? "";
-          debugPrint("❄️ Received ICE candidate for call: $callId");
+        } 
+        // else if (data["type"] == "candidate") {
+        //   final candidateData = data["candidate"];
+        //   final callId = data["callID"]?.toString() ?? "";
+        //   debugPrint("❄️ Received ICE candidate for call: $callId");
 
-          await webRTCService.addIceCandidate(
-            RTCIceCandidate(
-              candidateData['candidate'],
-              candidateData['sdpMid'] ?? '0',
-              candidateData['sdpMLineIndex'] is int
-                  ? candidateData['sdpMLineIndex']
-                  : int.tryParse(
-                          candidateData['sdpMLineIndex']?.toString() ?? '0') ??
-                      0,
-            ),
-          );
-        } else if (data["type"] == "call_rejected") {
+        //   await webRTCService.addIceCandidate(
+        //     RTCIceCandidate(
+        //       candidateData['candidate'],
+        //       candidateData['sdpMid'] ?? '0',
+        //       candidateData['sdpMLineIndex'] is int
+        //           ? candidateData['sdpMLineIndex']
+        //           : int.tryParse(
+        //                   candidateData['sdpMLineIndex']?.toString() ?? '0') ??
+        //               0,
+        //     ),
+        //   );
+        // } 
+        else if (data["type"] == "call_rejected") {
           final callId = data["callID"]?.toString() ?? "";
           final callerName = data["senderUsername"] ?? "Unknown";
           debugPrint("📞 Call rejected by $callerName - callId=$callId");
-
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+            final speakerSvc = Get.find<SpeakerphoneService>();
+          speakerSvc.stopRingtone();
+         
+         final livekit  = Get.find<LiveKitOneToOneCallService>();
+          await livekit.leaveCall();
           Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
           if (Get.currentRoute.contains('call')) {
             Get.back();
@@ -200,39 +204,43 @@ void _startHeartbeat() {
         } else if (data["type"] == "call_cancelled") {
           final roomId = data["callID"];
           debugPrint("📞 Call ended - Room: $roomId");
-          final webRTCService = Get.isRegistered<WebRTCService>()
-              ? Get.find<WebRTCService>()
-              : Get.put(WebRTCService());
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+            final speakerSvc = Get.find<SpeakerphoneService>();
+          final livekit  = Get.find<LiveKitOneToOneCallService>();
+       speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           // Navigate back only if we're on a call screen
           if (Get.currentRoute.contains('incomingCall')) {
             debugPrint("true");
             Get.offNamed(AppRoutes.home);
           }
-        } else if (data["type"] == "answer") {
-          final answerData = data["answer"];
-          final callId = data["callID"]?.toString() ?? "";
-          debugPrint("📥 Received ANSWER for call: $callId");
+        } 
+        // else if (data["type"] == "answer") {
+        //   final answerData = data["answer"];
+        //   final callId = data["callID"]?.toString() ?? "";
+        //   debugPrint("📥 Received ANSWER for call: $callId");
 
-          webRTCService.isCallAccepted.value = true;
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.handleAnswer(
-            RTCSessionDescription(answerData['sdp'], answerData['type']),
-          );
-        } else if (data["type"] == "call_accepted") {
+        //   webRTCService.isCallAccepted.value = true;
+        //   webRTCService.speakerphoneService.stopRingtone();
+        //   await webRTCService.handleAnswer(
+        //     RTCSessionDescription(answerData['sdp'], answerData['type']),
+        //   );
+        // } 
+        else if (data["type"] == "call_accepted") {
           final callId = data["callID"]?.toString() ?? "";
           final username = data["senderUsername"] ?? "Unknown";
           debugPrint("✅ Call accepted by $username - callId=$callId");
 
-          webRTCService.speakerphoneService.stopRingtone();
+           final speakerSvc = Get.find<SpeakerphoneService>();
+          speakerSvc.stopRingtone();
         } else if (data["type"] == "call_ended") {
           final callId = data["callID"]?.toString() ?? "";
           debugPrint("📞 Call ended - callId=$callId");
           Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+         final speakerSvc = Get.find<SpeakerphoneService>();
+         final livekit  = Get.find<LiveKitOneToOneCallService>();
+        speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           final nav = Get.key.currentState; // GetMaterialApp navigatorKey
           final canGoBack = nav?.canPop() ?? false;
@@ -243,11 +251,10 @@ void _startHeartbeat() {
             Get.offAllNamed(AppRoutes.home);
           }
         } else if (data["type"] == "group_call_started") {
-          final signaling = Get.isRegistered<GroupChatWebSocketService>()
-              ? Get.find<GroupChatWebSocketService>()
-              : Get.put(GroupChatWebSocketService(), permanent: true);
-           final callId = data["callID"];
-debugPrint("group call callid inside ping:${callId},${data["isVideo"]}");
+      
+          final callId = data["callID"];
+          debugPrint(
+              "group call callid inside ping:${callId},${data["isVideo"]}");
           Get.toNamed(
             ChatAppRoutes.groupIncomingCallScreen,
             arguments: {
@@ -264,9 +271,9 @@ debugPrint("group call callid inside ping:${callId},${data["isVideo"]}");
           final SpeakerphoneService speakerSvc =
               Get.find<SpeakerphoneService>();
           await speakerSvc.stopRingtone();
-        // final GroupChatWebSocketService chatSocket = Get.isRegistered<GroupChatWebSocketService>()?
-        // Get.find<GroupChatWebSocketService>():Get.put(GroupChatWebSocketService());
-        // chatSocket.hasOngoingCall=false.obs;
+          // final GroupChatWebSocketService chatSocket = Get.isRegistered<GroupChatWebSocketService>()?
+          // Get.find<GroupChatWebSocketService>():Get.put(GroupChatWebSocketService());
+          // chatSocket.hasOngoingCall=false.obs;
           // Navigate back only if we're on a call scree
           if (Get.currentRoute.contains('groupIncomingCallScreen')) {
             Get.offNamed(AppRoutes.home);
@@ -277,12 +284,11 @@ debugPrint("group call callid inside ping:${callId},${data["isVideo"]}");
       }, onError: (e) {
         _stopHeartbeat();
         debugPrint("✅ ping WebSocket connection closed onError:$e");
-      _retryConnect();
+        _retryConnect();
       });
     } catch (e) {
       _stopHeartbeat();
       _retryConnect();
-      
 
       debugPrint("✅ ping WebSocket connection closed on catch");
     }
@@ -327,6 +333,4 @@ debugPrint("group call callid inside ping:${callId},${data["isVideo"]}");
     _stopHeartbeat();
     channel.sink.close(status.normalClosure);
   }
-
-
 }

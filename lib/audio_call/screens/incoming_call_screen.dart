@@ -2,15 +2,14 @@ import 'dart:io';
 import 'dart:developer';
 
 import 'package:amu_alumni/amu_alumni.dart';
+import 'package:chat_app/audio_call/service/speakerphone_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import 'package:get/get.dart';
 
 import '../../chat_app.dart';
 import '../../routes/chat_app_routes.dart';
 import '../controller/call_session_controller.dart';
-import '../service/call_signaling_service.dart';
-import '../service/webrtc_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   const IncomingCallScreen({super.key});
@@ -20,9 +19,9 @@ class IncomingCallScreen extends StatefulWidget {
 }
 
 class _IncomingCallScreenState extends State<IncomingCallScreen> {
-  late final WebRTCService webrtc;
   late final ChatWebSocketService signaling;
   late final CallSessionController session;
+  late final SpeakerphoneService speakerSvc;
 
   bool fromNotification = false;
   String callerId = "";
@@ -43,13 +42,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     sdp = (args["sdp"] ?? "").toString();
     offerType = (args["offerType"] ?? "offer").toString();
 
-    webrtc = Get.find<WebRTCService>();
     signaling = Get.find<ChatWebSocketService>();
     session = Get.find<CallSessionController>();
+    speakerSvc = Get.find<SpeakerphoneService>();
 
-    // ✅ default to VIDEO (can override later via args["isVideo"]=false)
-    final isVideo =
-        args.containsKey("isVideo") ? (args["isVideo"] as bool) : true;
+    // ✅ Default to VIDEO (can override via args["isVideo"]=false)
+    final isVideo = args.containsKey("isVideo") ? (args["isVideo"] as bool) : true;
 
     session.hydrate(
       roomId: roomId,
@@ -62,15 +60,17 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
     signaling.setRoom(roomId);
     signaling.ensureConnectedFromRoomId(roomId);
-debugPrint("from notification:${fromNotification},${isVideo}");
+    
+    debugPrint("📲 IncomingCallScreen - fromNotification: $fromNotification, isVideo: $isVideo, roomId: $roomId");
+
     if (!fromNotification) {
-      webrtc.speakerphoneService.startRingtone(isIncoming: true);
+      speakerSvc.startRingtone(isIncoming: true);
     }
   }
 
   @override
   void dispose() {
-    webrtc.speakerphoneService.stopRingtone();
+    speakerSvc.stopRingtone();
     super.dispose();
   }
 
@@ -90,8 +90,7 @@ debugPrint("from notification:${fromNotification},${isVideo}");
               right: 0,
               child: Column(
                 children: [
-                  const Icon(Icons.account_circle,
-                      color: Colors.white70, size: 100),
+                  const Icon(Icons.account_circle, color: Colors.white70, size: 100),
                   const SizedBox(height: 16),
                   Text(
                     callerName,
@@ -105,8 +104,7 @@ debugPrint("from notification:${fromNotification},${isVideo}");
                         session.isVideo.value
                             ? "Incoming video call..."
                             : "Incoming audio call...",
-                        style:
-                            const TextStyle(color: Colors.grey, fontSize: 16),
+                        style: const TextStyle(color: Colors.grey, fontSize: 16),
                       )),
                 ],
               ),
@@ -123,11 +121,13 @@ debugPrint("from notification:${fromNotification},${isVideo}");
                     color: Colors.red,
                     label: "Reject",
                     onPressed: () async {
-                      webrtc.speakerphoneService.stopRingtone();
+                      speakerSvc.stopRingtone();
                       signaling.callRejected(roomId);
+                      
                       if (Platform.isIOS) {
                         await CallKitBridge.dismissIncoming(roomId);
                       }
+                      
                       fromNotification
                           ? Get.offAllNamed(AppRoutes.home)
                           : Get.back();
@@ -138,35 +138,26 @@ debugPrint("from notification:${fromNotification},${isVideo}");
                     color: Colors.green,
                     label: "Accept",
                     onPressed: () async {
-                      debugPrint("on accept:${session.isVideo.value}");
-                      webrtc.speakerphoneService.stopRingtone();
-                      // await webrtc.activateCallAudioSession();
+                      debugPrint("✅ Accepting call - isVideo: ${session.isVideo.value}, roomId: $roomId");
+                      speakerSvc.stopRingtone();
 
                       signaling.setRoom(roomId);
                       signaling.ensureConnectedFromRoomId(roomId);
-                          
-                            if (Platform.isIOS) {
+
+                      if (Platform.isIOS) {
                         await CallKitBridge.acceptCallFromApp(roomId);
                       }
 
-                      // ✅ Apply offer. WebRTCService auto-detects video from SDP ("m=video")group
-                      await webrtc
-                          .handleOffer(RTCSessionDescription(sdp, offerType));
-                    
-
-                      // signaling.callAccepted(roomId);
-                    
-
+                      // ✅ Navigate to call screen - LiveKit will handle room join
                       Get.offNamed(
                         ChatAppRoutes.callScreen,
                         arguments: {
                           "fromNotification": fromNotification,
                           "isCaller": false,
+                          "callId": roomId,
                           "roomId": roomId,
-                          "callerId": callerId,
-                          "callerName": callerName,
-                          // ✅ You can omit isVideo here, because SDP decides.
-                          // But we keep it for UI correctness before SDP track arrives.
+                          "peerId": callerId,
+                          "peerName": callerName,
                           "isVideo": session.isVideo.value,
                         },
                       );

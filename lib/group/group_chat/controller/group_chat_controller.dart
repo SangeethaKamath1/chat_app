@@ -63,9 +63,9 @@ class GroupChatController extends GetxController {
 
   // Messages list
 // final RxList<String> messages = <String>[].obs;
-  GroupChatWebSocketService chatWebSocket =Get.isRegistered<GroupChatWebSocketService>()
-      ? Get.find<GroupChatWebSocketService>()
-      : Get.put(GroupChatWebSocketService());
+  GroupChatWebSocketService chatWebSocket =
+       Get.find<GroupChatWebSocketService>();
+     
   var showEmojiPicker = false.obs; // <-- reactive state
 
   OverlayEntry? reactionOverlayEntry;
@@ -156,11 +156,11 @@ Future<void> forwardToMultipleConversations({
   @override
   void onInit() {
     super.onInit();
-   
-    name.value = Get.arguments['name']?.toString()??"";
-    conversationId = Get.arguments['conversationId']?.toString()??"";
-    status.value = Get.arguments['status']?.toString()??"";
-    groupIcon.value =Get.arguments['icon']?.toString()??"";
+    final args = Get.arguments as Map<String, dynamic>?;
+    name.value = args?['name']?.toString()??"";
+    conversationId = args?['conversationId']?.toString()??"";
+    status.value = args?['status']?.toString()??"";
+    groupIcon.value =args?['icon']?.toString()??"";
     //  if(conversationId.isEmpty){
     //   createConversation();
     //   }else{

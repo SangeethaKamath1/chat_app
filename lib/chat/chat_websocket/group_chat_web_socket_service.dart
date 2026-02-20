@@ -44,11 +44,11 @@ void _startHeartBeat(){
   });
 }
 void _stopHeartBeat(){
-  _pingTimer= null;
-  _pingTimer?.cancel();
-  _waitingForPong=false;
-  _pongTimer = null;
-  _pongTimer?.cancel();
+ _waitingForPong = false;
+    _pingTimer?.cancel();
+    _pongTimer?.cancel();
+    _pingTimer = null;
+    _pongTimer = null;
 
 }
   void _sendPing(){
@@ -70,7 +70,7 @@ void _stopHeartBeat(){
       });
     }catch(e){
  debugPrint("exception on ping:");
-      _stopHeartBeat();
+     
       disconnect();
        connect(_connectedConversationId);
           }
@@ -333,7 +333,7 @@ else if (data["type"] == "group_call_ended") {
   channel = null;
   _isConnecting = false;
   _connectedConversationId = 0;
-  // _stopHeartBeat();
+   
   }
 
   Future<void> _handleRetry() async {

@@ -106,6 +106,7 @@ class ChatController extends GetxController with RouteAware {
 
   @override
   void onInit() {
+    debugPrint("onInt called inside chat controller");
     super.onInit();
 
     final args = Get.arguments as Map<String, dynamic>?;

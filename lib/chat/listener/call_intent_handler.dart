@@ -64,6 +64,7 @@ class CallIntentHandler {
       await _onReject(callId);}
     } else if (action == 'open') {
        if (isGroupCall) {
+        debugPrint("on open :${isGroupCall}");
     await _onOpenGroup(callId, callerName, callerId, sdp, offerType, isVideo);
   } else {
     await _onOpen(callId, callerName, callerId, sdp, offerType, isVideo);
@@ -75,7 +76,7 @@ class CallIntentHandler {
   static Future<void> _ensureGroupSignalingConnected(String callId) async {
     final signaling = Get.isRegistered<GroupChatWebSocketService>()
         ? Get.find<GroupChatWebSocketService>()
-        : Get.put(GroupChatWebSocketService(), permanent: true);
+        : Get.put(GroupChatWebSocketService());
 
     signaling.setRoom(callId);
 
@@ -93,7 +94,7 @@ class CallIntentHandler {
   static Future<void> _ensureSignalingConnected(String callId) async {
     final signaling = Get.isRegistered<ChatWebSocketService>()
         ? Get.find<ChatWebSocketService>()
-        : Get.put(ChatWebSocketService(), permanent: true);
+        : Get.put(ChatWebSocketService());
 
     signaling.setRoom(callId);
 
@@ -123,12 +124,11 @@ class CallIntentHandler {
     }
 
     // Stop webrtc if any
-    final webrtc = Get.isRegistered<WebRTCService>()
-        ? Get.find<WebRTCService>()
-        : Get.put(WebRTCService(), permanent: true);
+final speakerSvc =Get.find<SpeakerphoneService>();
+          final livekit =Get.find<LiveKitOneToOneCallService>();
 
-    webrtc.speakerphoneService.stopRingtone();
-    await webrtc.endCall();
+speakerSvc.stopRingtone();
+    await livekit.leaveCall();
   }
 
   static Future<void> _onAccept(
@@ -139,31 +139,31 @@ class CallIntentHandler {
     String offerType,
     String isVideo
   ) async {
-    debugPrint("📞 ACCEPT handled | callId=$callId isVideo =$isVideo");
+    debugPrint("📞 ACCEPT handled | callId=$callId isVideo =$isVideo $callerName");
 
     // 1) Ensure signaling socket is connected first
     await _ensureSignalingConnected(callId);
 
-  
+  final speakerSvc = Get.find<SpeakerphoneService>();
 
     // 2) Ensure WebRTC exists
-    final webrtc = Get.isRegistered<WebRTCService>()
-        ? Get.find<WebRTCService>()
-        : Get.put(WebRTCService(), permanent: true);
+    // final webrtc = Get.isRegistered<WebRTCService>()
+    //     ? Get.find<WebRTCService>()
+    //     : Get.put(WebRTCService(), permanent: true);
 
-    webrtc.speakerphoneService.stopRingtone();
+    speakerSvc.stopRingtone();
    final session=  Get.isRegistered<CallSessionController>()
         ? Get.find<CallSessionController>()
-        : Get.put(CallSessionController(), permanent: true);
+        : Get.put(CallSessionController());
 // session.reset();
 session.isVideo.value =isVideo ==  "true"?true:false;
     // 3) Apply offer -> WebRTCService will create local answer
     // and CallSignalingService will send it (via your wiring)
-    if (sdp.isNotEmpty) {
-      await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
-    } else {
-      debugPrint("⚠️ SDP empty in intent accept — cannot handleOffer");
-    }
+    // if (sdp.isNotEmpty) {
+    //   await webrtc.handleOffer(RTCSessionDescription(sdp, offerType));
+    // } else {
+    //   debugPrint("⚠️ SDP empty in intent accept — cannot handleOffer");
+    // }
 
     // 4) Notify caller that we accepted
     //signaling.callAccepted(callId);
@@ -205,7 +205,7 @@ session.isVideo.value =isVideo ==  "true"?true:false;
     // ✅ Get signaling socket instance
     final signaling = Get.isRegistered<GroupChatWebSocketService>()
         ? Get.find<GroupChatWebSocketService>()
-        : Get.put(GroupChatWebSocketService(), permanent: true);
+        : Get.put(GroupChatWebSocketService());
         // final sp = Get.find<SpeakerphoneService>();
         // sp.stopRingtone();
 
@@ -275,16 +275,18 @@ static Future<void> _onGroupReject(String callId)async{
 
     await _ensureSignalingConnected(callId);
     final signaling = Get.find<ChatWebSocketService>();
+      final speakerSvc = Get.find<SpeakerphoneService>();
+      final livekit =Get.find<LiveKitOneToOneCallService>();
 
-    final webrtc = Get.isRegistered<WebRTCService>()
-        ? Get.find<WebRTCService>()
-        : Get.put(WebRTCService(), permanent: true);
+    // final webrtc = Get.isRegistered<WebRTCService>()
+    //     ? Get.find<WebRTCService>()
+    //     : Get.put(WebRTCService(), permanent: true);
 
-    webrtc.speakerphoneService.stopRingtone();
-    await webrtc.endCall();
+   speakerSvc.stopRingtone();
+     livekit.leaveCall();
  final session=  Get.isRegistered<CallSessionController>()
         ? Get.find<CallSessionController>()
-        : Get.put(CallSessionController(), permanent: true);
+        : Get.put(CallSessionController());
 // session.reset();
     // notify caller
     signaling.callRejected(callId);
@@ -330,7 +332,7 @@ static Future<void> _onGroupReject(String callId)async{
     debugPrint("📞 OPEN incoming call screen | callId=$callId isVideo=$isVideo");
  final session=  Get.isRegistered<CallSessionController>()
         ? Get.find<CallSessionController>()
-        : Get.put(CallSessionController(), permanent: true);
+        : Get.put(CallSessionController());
 // session.reset();
 session.isVideo.value = isVideo == "true"?true:false;
     // Ensure signaling is ready even when user just opens screen

@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:amu_alumni/routes/app_routes.dart';
+import 'package:chat_app/audio_call/service/speakerphone_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
@@ -94,7 +95,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     _pongTimer = null;
   }
 
-  String roomId = "";
+final  RxString roomId = "".obs;
   int _retryCount = 0;
   bool _isReconnecting = false;
   static const int _maxRetries = 5;
@@ -102,10 +103,10 @@ StreamSubscription<UserStatusEvent>? _statusSub;
   /// avoid multiple connects at same time
   bool _isConnecting = false;
 
-  WebRTCService get webRTCService => Get.find<WebRTCService>();
+  // WebRTCService get webRTCService => Get.find<WebRTCService>();
 
   void setRoom(String callId) {
-    roomId = callId;
+    roomId.value = callId;
     debugPrint("🧩 CallSignalingService roomId set: $roomId");
   }
 
@@ -289,38 +290,41 @@ StreamSubscription<UserStatusEvent>? _statusSub;
             "fromNotification": false,
             "isVideo": isVideo
           });
-        } else if (data["type"] == "answer") {
-          final answerData = data["answer"];
-          final callId = data["callID"]?.toString() ?? "";
-          debugPrint("📥 Received ANSWER for call: $callId");
-          webRTCService.isCallAccepted.value = true;
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.handleAnswer(
-            RTCSessionDescription(answerData['sdp'], answerData['type']),
-          );
-        } else if (data["type"] == "candidate") {
-          final candidateData = data["candidate"];
-          final callId = data["callID"]?.toString() ?? "";
-          debugPrint("❄️ Received ICE candidate for call: $callId");
+        } 
+        // else if (data["type"] == "answer") {
+        //   final answerData = data["answer"];
+        //   final callId = data["callID"]?.toString() ?? "";
+        //   debugPrint("📥 Received ANSWER for call: $callId");
+        //   webRTCService.isCallAccepted.value = true;
+        //   webRTCService.speakerphoneService.stopRingtone();
+        //   await webRTCService.handleAnswer(
+        //     RTCSessionDescription(answerData['sdp'], answerData['type']),
+        //   );
+        // } else if (data["type"] == "candidate") {
+        //   final candidateData = data["candidate"];
+        //   final callId = data["callID"]?.toString() ?? "";
+        //   debugPrint("❄️ Received ICE candidate for call: $callId");
 
-          await webRTCService.addIceCandidate(
-            RTCIceCandidate(
-              candidateData['candidate'],
-              candidateData['sdpMid'] ?? '0',
-              candidateData['sdpMLineIndex'] is int
-                  ? candidateData['sdpMLineIndex']
-                  : int.tryParse(
-                          candidateData['sdpMLineIndex']?.toString() ?? '0') ??
-                      0,
-            ),
-          );
-        }
+        //   await webRTCService.addIceCandidate(
+        //     RTCIceCandidate(
+        //       candidateData['candidate'],
+        //       candidateData['sdpMid'] ?? '0',
+        //       candidateData['sdpMLineIndex'] is int
+        //           ? candidateData['sdpMLineIndex']
+        //           : int.tryParse(
+        //                   candidateData['sdpMLineIndex']?.toString() ?? '0') ??
+        //               0,
+        //     ),
+        //   );
+        // }
          else if (data["type"] == "call_ended") {
           final roomId = data["callID"]?.toString() ?? "";
           debugPrint("📞 Call ended - callId=$roomId");
+          final speakerSvc =Get.find<SpeakerphoneService>();
+          final livekit =Get.find<LiveKitOneToOneCallService>();
           Platform.isIOS ? CallKitBridge.dismissIncoming(roomId) : null;
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+          speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           final nav = Get.key.currentState; // GetMaterialApp navigatorKey
           final canGoBack = nav?.canPop() ?? false;
@@ -335,27 +339,33 @@ StreamSubscription<UserStatusEvent>? _statusSub;
           final roomId = data["callID"]?.toString() ?? "";
           debugPrint("📞 Call cancelled - callId=$roomId");
           await CallKitBridge.dismissIncoming(roomId);
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+          final speakerSvc = Get.find<SpeakerphoneService>();
+          final livekit  = Get.find<LiveKitOneToOneCallService>();
+          speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           if (Get.currentRoute.contains('incomingCall')) {
             Get.back();
           } else {
             Get.offAllNamed(AppRoutes.home);
           }
-        } else if (data["type"] == "call_accepted") {
+        } 
+        else if (data["type"] == "call_accepted") {
           final callId = data["callID"]?.toString() ?? "";
           final username = data["senderUsername"] ?? "Unknown";
           debugPrint("✅ Call accepted by $username - callId=$callId");
-
-          webRTCService.speakerphoneService.stopRingtone();
+ final speakerSvc = Get.find<SpeakerphoneService>();
+         
+          speakerSvc.stopRingtone();
         } else if (data["type"] == "call_rejected") {
           final callId = data["callID"]?.toString() ?? "";
           final callerName = data["senderUsername"] ?? "Unknown";
           debugPrint("📞 Call rejected by $callerName - callId=$callId");
           Platform.isIOS ? CallKitBridge.dismissIncoming(callId) : null;
-          webRTCService.speakerphoneService.stopRingtone();
-          await webRTCService.endCall();
+           final speakerSvc = Get.find<SpeakerphoneService>();
+            final livekit  = Get.find<LiveKitOneToOneCallService>();
+        speakerSvc.stopRingtone();
+          await livekit.leaveCall();
 
           if (Get.currentRoute.contains('call')) {
             Get.back();
@@ -375,7 +385,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
         channel = null;
         _stopHeartBeat();
         // keep your reconnect logic if you already had it
-        _handleRetry();
+        _handleRetry(); 
       });
     } catch (e) {
       _stopHeartBeat();
@@ -384,15 +394,17 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     }
   }
 
-  void sendOffer(RTCSessionDescription offer, bool isVideo) {
+  void callStarted(
+    //RTCSessionDescription offer, 
+  bool isVideo) {
     if (channel == null) {
       debugPrint("❌ sendOffer: channel is null");
       return;
     }
     final payload = {
       "type": "call",
-      "offer": {"sdp": offer.sdp, "type": offer.type},
-      "callID": roomId,
+      "offer": {"sdp": "", "type": ""},
+      "callID": roomId.value,
       "isVideo": isVideo
     };
     send(payload);
@@ -407,7 +419,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
     final payload = {
       "type": "answer",
       "answer": {"sdp": answer.sdp, "type": answer.type},
-      "callID": roomId,
+      "callID": roomId.value,
     };
     send(payload);
     log("📤 ANSWER SENT: $payload");
@@ -425,7 +437,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
         "sdpMid": candidate.sdpMid ?? "0",
         "sdpMLineIndex": candidate.sdpMLineIndex ?? 0,
       },
-      "callID": roomId,
+      "callID": roomId.value,
     };
     send(payload);
   }
@@ -440,6 +452,7 @@ StreamSubscription<UserStatusEvent>? _statusSub;
   }
 
   void callRejected(String callId) {
+    debugPrint("call rejected sent");
     setRoom(callId);
     send({"type": "call_rejected", "callID": callId});
   }
