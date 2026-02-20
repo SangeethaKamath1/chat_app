@@ -1,13 +1,16 @@
-import 'dart:async';
-import 'dart:io';
+// ==========================
+// VoiceCallScreen (UPDATED)
+// ==========================
 
-import 'package:amu_alumni/amu_alumni.dart';
+import 'dart:async';
+
+import 'package:amu_alumni/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 import 'package:livekit_client/livekit_client.dart';
 
-import '../../chat_app.dart';
+
 import '../controller/call_session_controller.dart';
 import '../service/speakerphone_service.dart';
 import '../../chat/chat_websocket/chat_web_socket_service.dart';
@@ -43,15 +46,20 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       isCaller: (args["isCaller"] ?? false) as bool,
       fromNotification: (args["fromNotification"] ?? false) as bool,
       peerId: (args["peerId"] ?? "").toString(),
-      peerName: (args["peerName"] ?? "").toString(),
+      peerName: (args["peerName"] ?? args["callerName"]?? "").toString(),
       isVideo: args.containsKey("isVideo") ? args["isVideo"] as bool : true,
     );
-    
-    debugPrint("📱 VoiceCallScreen init - isCaller: ${session.isCaller.value}, isVideo: ${session.isVideo.value}, roomId: ${session.roomId.value}");
-    
+
+    debugPrint(
+      "📱 VoiceCallScreen init - isCaller: ${session.isCaller.value}, "
+      "isVideo: ${session.isVideo.value}, roomId: ${session.roomId.value}",
+    );
+     signaling.setRoom(session.roomId.value);
+    signaling.ensureConnectedFromRoomId(session.roomId.value);
+
     livekit.setRole(isCaller: session.isCaller.value);
     livekit.setCallType(isVideo: session.isVideo.value);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeCall();
     });
@@ -66,13 +74,15 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
   Future<void> _initializeCall() async {
     if (_initialized) return;
 
-    debugPrint("🔗 Initializing call - isVideo: ${session.isVideo.value}, isCaller: ${session.isCaller.value}");
+    debugPrint(
+      "🔗 Initializing call - isVideo: ${session.isVideo.value}, isCaller: ${session.isCaller.value}",
+    );
 
     if (session.isCaller.value) {
       speakerSvc.startRingtone(isIncoming: false);
       _startCallTimeout();
     }
-    
+
     debugPrint("🔗 Joining room: ${session.roomId.value}");
     await livekit.joinCall(session.roomId.value);
 
@@ -100,9 +110,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       debugPrint("⏰ Call timed out");
       Get.snackbar("No Answer", "Call timed out");
 
-      session.fromNotification.value
-          ? Get.offAllNamed(AppRoutes.home)
-          : Get.back();
+      session.fromNotification.value ? Get.offAllNamed(AppRoutes.home) : Get.back();
     });
   }
 
@@ -129,13 +137,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
           children: [
             // REMOTE VIDEO
             if (session.isVideo.value)
-              Positioned.fill(
-                child: _buildRemoteVideo(),
-              )
+              Positioned.fill(child: _buildRemoteVideo())
             else
-              const Positioned.fill(
-                child: ColoredBox(color: Colors.black),
-              ),
+              const Positioned.fill(child: ColoredBox(color: Colors.black)),
 
             // TOP INFO
             Positioned(
@@ -145,11 +149,12 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
               child: Column(
                 children: [
                   Text(
-                    session.peerName.value.isEmpty ? "Call" : session.peerName.value,
+                    session.peerName.value.isEmpty  ? "Call" : session.peerName.value,
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600),
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -185,10 +190,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     );
   }
 
-  // ✅ NEW: Simplified using track observables
   Widget _buildRemoteVideo() {
     final remote = livekit.remoteParticipant.value;
-    
+
     if (remote == null) {
       debugPrint("🎥 [UI] No remote participant yet");
       return const ColoredBox(
@@ -199,7 +203,6 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       );
     }
 
-    // ✅ Use the observable instead of querying publications
     final remoteTrack = livekit.remoteVideoTrack.value;
     final isRemoteMuted = livekit.isRemoteVideoMuted.value;
 
@@ -218,19 +221,14 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       );
     }
 
-    debugPrint("🎥 [UI] Rendering remote video track");
     return VideoTrackRenderer(
       remoteTrack,
       fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
     );
   }
 
-  // ✅ NEW: Simplified using track observables
   Widget _buildLocalVideo() {
-    // ✅ Use the observable instead of querying publications
     final localTrack = livekit.localVideoTrack.value;
-
-    debugPrint("🎥 [UI] Local track: ${localTrack?.runtimeType}");
 
     if (localTrack == null) {
       return Container(
@@ -244,7 +242,6 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       );
     }
 
-    debugPrint("🎥 [UI] Rendering local video track");
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: VideoTrackRenderer(
@@ -260,9 +257,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
       children: [
         _btn(
           icon: session.isMuted.value ? Icons.mic_off : Icons.mic,
-          onTap: () {
-            livekit.toggleMute();
-          },
+          onTap: livekit.toggleMute,
         ),
         if (session.isVideo.value)
           _btn(
@@ -289,9 +284,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
             speakerSvc.stopRingtone();
             await livekit.leaveCall();
 
-            session.fromNotification.value
-                ? Get.offAllNamed(AppRoutes.home)
-                : Get.back();
+            session.fromNotification.value ? Get.offAllNamed(AppRoutes.home) : Get.back();
           },
         ),
       ],
@@ -322,19 +315,15 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
     if (livekit.isConnected.value && livekit.remoteParticipant.value != null) {
       return "Connected";
     }
-
     if (livekit.isConnected.value && livekit.remoteParticipant.value == null) {
       return session.isCaller.value ? "Waiting for answer…" : "Connecting…";
     }
-
     if (session.isCaller.value && !livekit.isConnected.value) {
       return "Calling…";
     }
-
     if (!session.isCaller.value && !livekit.isConnected.value) {
       return "Joining…";
     }
-
     return "Connecting…";
   }
 

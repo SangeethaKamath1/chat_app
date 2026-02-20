@@ -12,6 +12,7 @@ class GlobalBinding extends Bindings {
     Get.lazyPut(() => ChatAddMembersController(),fenix:true);
     // Get.put(CallSignalingService(), permanent: true);
     // Get.put(WebRTCService(), permanent: true);
+      Get.put(SpeakerphoneService(), permanent: true);
     Get.put(LiveKitOneToOneCallService());
     Get.put(PingWebSocketService(),permanent: true);
    
@@ -22,7 +23,7 @@ class GlobalBinding extends Bindings {
     Get.put(CallSessionController(), permanent: true);
 
     // ✅ Keep if you want ringtone stop/start always available
-    Get.put(SpeakerphoneService(), permanent: true);
+  
     
   }
 }

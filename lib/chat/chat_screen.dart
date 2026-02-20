@@ -34,6 +34,7 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ChatController chatController = Get.find<ChatController>();
+    // chatController.onInit();
 
     void _showClearChatDialog(
       BuildContext context,
